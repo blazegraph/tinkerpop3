@@ -1,3 +1,25 @@
+/**
+Copyright (C) SYSTAP, LLC 2006-2015.  All rights reserved.
+
+Contact:
+     SYSTAP, LLC
+     2501 Calvert ST NW #106
+     Washington, DC 20008
+     licenses@systap.com
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; version 2 of the License.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+*/
 package com.blazegraph.gremlin.structure;
 
 import java.util.Collection;
@@ -161,6 +183,8 @@ public class BlazeGraphEmbedded extends BlazeGraph {
 
     private final BigdataSailRepository repo;
     
+    private final ChangeLogTransformer listener = new ChangeLogTransformer();
+    
     private final List<BlazeGraphListener> listeners = new CopyOnWriteArrayList<>();
     
     private final BlazeTransaction tx = new BlazeTransaction();
@@ -292,20 +316,26 @@ public class BlazeGraphEmbedded extends BlazeGraph {
                     cxn.prepareUpdate(QueryLanguage.SPARQL, queryStr);
             update.execute();
         });
+        
     }
     
     private void logQuery(final String queryStr) {
-        sparqlLog.trace(() -> "query:\n"+ 
+        sparqlLog.info(() -> "query:\n"+ 
                 (queryStr.length() <= SPARQL_LOG_MAX ? 
                         queryStr : queryStr.substring(0, SPARQL_LOG_MAX)+" ..."));
     }
-
-
-    
     
     @Override
     public BlazeTransaction tx() {
         return tx;
+    }
+    
+    public void commit() {
+        tx.commit();
+    }
+
+    public void rollback() {
+        tx.rollback();
     }
 
     private boolean open = true;
@@ -340,6 +370,15 @@ public class BlazeGraphEmbedded extends BlazeGraph {
             cxn.close();
         }
     }
+    
+    public long statementCount() throws Exception {
+        final BigdataSailRepositoryConnection cxn = readCxn();
+        try {
+            return cxn.getTripleStore().getStatementCount();
+        } finally {
+            cxn.close();
+        }
+    }
 
     public class BlazeTransaction extends AbstractThreadLocalTransaction {
 
@@ -363,7 +402,12 @@ public class BlazeGraphEmbedded extends BlazeGraph {
         
         @Override
         protected void doOpen() {
-            Code.wrapThrow(() -> tlTx.set(repo.getUnisolatedConnection()));
+            Code.wrapThrow(() -> {
+                final BigdataSailRepositoryConnection cxn =
+                        repo.getUnisolatedConnection();
+                cxn.addChangeLog(listener);
+                tlTx.set(cxn);   
+            });
         }
 
         @Override
@@ -403,6 +447,7 @@ public class BlazeGraphEmbedded extends BlazeGraph {
             super.doClose();
             final BigdataSailRepositoryConnection cxn = tlTx.get();
             if (cxn != null) {
+                cxn.removeChangeLog(listener);
                 tlTx.remove();
                 Code.wrapThrow(() -> cxn.close());
                 setBulkLoad(false);
@@ -435,6 +480,9 @@ public class BlazeGraphEmbedded extends BlazeGraph {
          */
         @Override
         public void changeEvent(final IChangeRecord record) {
+            if (listeners.isEmpty())
+                return;
+            
             /*
              * Watch out for history change events.
              */
@@ -561,8 +609,13 @@ public class BlazeGraphEmbedded extends BlazeGraph {
          */
         @Override
         public void transactionCommited(final long commitTime) {
-            notifyRemoves();
-            listeners.forEach(l -> l.transactionCommited(commitTime));
+            if (listeners.isEmpty()) {
+                removes.clear();
+                return;
+            } else {
+                notifyRemoves();
+                listeners.forEach(l -> l.transactionCommited(commitTime));
+            }
         }
     
         /**
@@ -570,8 +623,13 @@ public class BlazeGraphEmbedded extends BlazeGraph {
          */
         @Override
         public void transactionAborted() {
-            notifyRemoves();
-            listeners.forEach(BlazeGraphListener::transactionAborted);
+            if (listeners.isEmpty()) {
+                removes.clear();
+                return;
+            } else {
+                notifyRemoves();
+                listeners.forEach(BlazeGraphListener::transactionAborted);
+            }
         }
         
         @Override

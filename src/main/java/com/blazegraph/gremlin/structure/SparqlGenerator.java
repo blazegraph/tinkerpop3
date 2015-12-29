@@ -1,3 +1,25 @@
+/**
+Copyright (C) SYSTAP, LLC 2006-2015.  All rights reserved.
+
+Contact:
+     SYSTAP, LLC
+     2501 Calvert ST NW #106
+     Washington, DC 20008
+     licenses@systap.com
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; version 2 of the License.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+*/
 package com.blazegraph.gremlin.structure;
 
 import static java.util.Arrays.asList;
@@ -56,7 +78,7 @@ public class SparqlGenerator {
                      VALUES + 
                 "    ?s ?p ?o .\n" +
                 "    filter(isLiteral(?o)) .\n" +
-                "    filter(?p not in(<LABEL>,<VALUE>)) .\n" +
+                "    filter(?p not in(<LABEL>,<VALUE>,<ADDED>,<REMOVED>)) .\n" +
                 "}";
         
         String VERTEX_PROPERTIES =
@@ -65,12 +87,12 @@ public class SparqlGenerator {
                 "    {\n" +
                 "        bind(<<?s ?p ?o>> as ?vp) .\n" +
                 "        filter(isLiteral(?o)) .\n" +
-                "        filter(datatype(?o) != <"+CompressedTimestampExtension.COMPRESSED_TIMESTAMP+">) .\n" +
+                "        filter(datatype(?o) != <LI>) .\n" +
                 "        filter(?p != <LABEL>) .\n" +
                 "    } union {\n" +
                 "        bind(<<?s ?p ?order>> as ?vp) .\n" +
                 "        filter(isLiteral(?order)) .\n" +
-                "        filter(datatype(?order) = <"+CompressedTimestampExtension.COMPRESSED_TIMESTAMP+">) .\n" +
+                "        filter(datatype(?order) = <LI>) .\n" +
                 "        ?vp <VALUE> ?o .\n" +
                 "    }\n" +
                 "} order by ?order";
@@ -101,26 +123,29 @@ public class SparqlGenerator {
                          REVERSE.replace("    ", "        ") +
                 "    }\n";
         
+        /**
+         * Used by Cardinality.single to remove all old vertex properties
+         * except exact matches for the new rdf:value.
+         */
         String CLEAN_VERTEX_PROPS =
                 "delete {\n" +
-                "    <S> <P> ?o .\n" +
+                "    <VERTEX> <KEY> ?val .\n" +
+                "    <VERTEX> <KEY> ?li .\n" +
                 "    ?sid ?pp ?oo .\n" +
                 "} where {\n" +
                 "    {\n" +
-                "        <S> <P> ?o . " +
-                "        filter(?o != O) .\n" +
-                "        filter(datatype(?o) != <"+PackedLongIV.PACKED_LONG+">) .\n" +
+                         // remove any non-li vps with different value
+                "        bind(<< <VERTEX> <KEY> ?val >> as ?sid) .\n" +
+                "        filter(datatype(?val) != <LI>) .\n" +
+                "        filter(?val != VAL) .\n" +
                 "        optional {\n" +
-                "           bind(<<<S> <P> ?o>> as ?sid) .\n" +
                 "           ?sid ?pp ?oo .\n" +
                 "        }\n" +
                 "    } union {\n" +
-                "        <S> <P> ?vp . " +
-                "        filter(datatype(?vp) = <"+PackedLongIV.PACKED_LONG+">) .\n" +
-                "        optional {\n" +
-                "           bind(<<<S> <P> ?o>> as ?sid) .\n" +
-                "           ?sid ?pp ?oo .\n" +
-                "        }\n" +
+                         // remove all li vps regardless of rdf:value
+                "        bind(<< <VERTEX> <KEY> ?li >> as ?sid) .\n" +
+                "        filter(datatype(?li) = <LI>) .\n" +
+                "        ?sid ?pp ?oo .\n" +
                 "    }\n" +
                 "}";
         
@@ -135,17 +160,20 @@ public class SparqlGenerator {
                 "select ?sid ?action ?time where {\n"+
                      VALUES + 
                 "    {\n" +
-                "        bind(<< ?id ?p ?o >> as ?sid) .\n" + // vertices
+                         // vertices
+                "        bind(<< ?id ?p ?o >> as ?sid) .\n" +
                 "        hint:Prior hint:history true .\n" +
+                "        ?sid ?action ?time .\n" +
+                "        filter(?action in (<ADDED>,<REMOVED>)) .\n" +
                 "    } union {\n" +
-                "        bind(<< ?from ?id ?to >> as ?edge) .\n" + // edges
+                         // edges
+                "        bind(<< ?from ?id ?to >> as ?edge) .\n" +
                 "        bind(<< ?edge ?p ?o >> as ?sid) .\n" +
+                "        ?sid ?action ?time .\n" +
+                "        filter(?action in (<ADDED>,<REMOVED>)) .\n" +
                 "    }\n" +
-                "    ?sid ?action ?time ." +
-                "    filter(?action in (<"+RDRHistory.Vocab.ADDED+">," +
-                                       "<"+RDRHistory.Vocab.REMOVED+">)) .\n" +
                 "    hint:Query hint:history true .\n" +
-                "}";
+                "} order by ?time ?action";
 
          
     }
@@ -170,24 +198,36 @@ public class SparqlGenerator {
     
     private final String BOTH;
     
+    private final String CLEAN_VERTEX_PROPS;
+    
+    private final String HISTORY;
+    
     public SparqlGenerator(final BlazeValueFactory vf) {
-        final String label = vf.labelURI().stringValue();
-        final String value = vf.valueURI().stringValue();
-        final Function<String, String> replacer = template -> {
+        final String label = vf.label().stringValue();
+        final String value = vf.value().stringValue();
+        final String li = vf.liDatatype().stringValue();
+        final String added = vf.historyAdded().stringValue();
+        final String removed = vf.historyRemoved().stringValue();
+        final Function<String, String> f = template -> {
             return template.replace("LABEL", label)
-                           .replace("VALUE", value);
+                           .replace("VALUE", value)
+                           .replace("LI", li)
+                           .replace("ADDED", added)
+                           .replace("REMOVED", removed);
         };
         
-        this.VERTICES = replacer.apply(Templates.VERTICES);
-        this.VERTEX_COUNT = replacer.apply(Templates.VERTEX_COUNT);
-        this.EDGES = replacer.apply(Templates.EDGES);
-        this.EDGE_COUNT = replacer.apply(Templates.EDGE_COUNT);
-        this.PROPERTIES = replacer.apply(Templates.PROPERTIES);
-        this.VERTEX_PROPERTIES = replacer.apply(Templates.VERTEX_PROPERTIES);
-        this.EDGES_FROM_VERTEX = replacer.apply(Templates.EDGES_FROM_VERTEX);
-        this.FORWARD = replacer.apply(Templates.FORWARD);
-        this.REVERSE = replacer.apply(Templates.REVERSE);
-        this.BOTH = replacer.apply(Templates.BOTH);
+        this.VERTICES = f.apply(Templates.VERTICES);
+        this.VERTEX_COUNT = f.apply(Templates.VERTEX_COUNT);
+        this.EDGES = f.apply(Templates.EDGES);
+        this.EDGE_COUNT = f.apply(Templates.EDGE_COUNT);
+        this.PROPERTIES = f.apply(Templates.PROPERTIES);
+        this.VERTEX_PROPERTIES = f.apply(Templates.VERTEX_PROPERTIES);
+        this.EDGES_FROM_VERTEX = f.apply(Templates.EDGES_FROM_VERTEX);
+        this.FORWARD = f.apply(Templates.FORWARD);
+        this.REVERSE = f.apply(Templates.REVERSE);
+        this.BOTH = f.apply(Templates.BOTH);
+        this.CLEAN_VERTEX_PROPS = f.apply(Templates.CLEAN_VERTEX_PROPS);
+        this.HISTORY = f.apply(Templates.HISTORY);
     }
     
     public String vertices(final List<URI> uris) {
@@ -208,7 +248,6 @@ public class SparqlGenerator {
     
     private String elements(final String template, 
             final List<URI> uris) {
-//        final List<URI> uris = validateIds(elementIds);
         final StringBuilder sb = new StringBuilder();
         if (!uris.isEmpty()) {
             buildValuesClause(sb, "?id", uris);
@@ -259,18 +298,19 @@ public class SparqlGenerator {
         return queryStr;
     }
     
-    public String cleanVertexProps(final URI s, final URI p, final Literal o) {
-        return Templates.CLEAN_VERTEX_PROPS
-                .replace("S", s.toString())
-                .replace("P", p.toString())
-                .replace("O", o.toString());
+    public String cleanVertexProps(final URI vertex, final URI key, 
+            final Literal val) {
+        return CLEAN_VERTEX_PROPS
+                .replace("VERTEX", vertex.toString())
+                .replace("KEY", key.toString())
+                .replace("VAL", val.toString());
     }
     
     public String history(final List<URI> uris) {
         final StringBuilder vc = buildValuesClause(
-                new StringBuilder(), "?s", uris);
+                new StringBuilder(), "?id", uris);
         final String queryStr = 
-                Templates.HISTORY.replace(Templates.VALUES, vc.toString());
+                HISTORY.replace(Templates.VALUES, vc.toString());
         return queryStr;
     }
     

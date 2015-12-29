@@ -1,10 +1,30 @@
+/**
+Copyright (C) SYSTAP, LLC 2006-2015.  All rights reserved.
+
+Contact:
+     SYSTAP, LLC
+     2501 Calvert ST NW #106
+     Washington, DC 20008
+     licenses@systap.com
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; version 2 of the License.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+*/
 package com.blazegraph.gremlin.structure;
 
 import static java.util.stream.Collectors.toList;
-import static org.junit.Assert.assertEquals;
 
 import java.util.List;
-import java.util.stream.Stream;
 
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
@@ -32,8 +52,7 @@ public class TestBlazeGraph extends TestCase {
     
     @Override
     public void setUp() throws Exception {
-        final EmbeddedBlazeGraphProvider provider = new EmbeddedBlazeGraphProvider(); 
-        this.graph = provider.open();
+        this.graph = EmbeddedBlazeGraphProvider.open();
     }
     
     @Override
@@ -382,7 +401,6 @@ public class TestBlazeGraph extends TestCase {
 
         log.debug(() -> "\n"+graph.dumpStore());
 
-        graph.readFromWriteCxn(() -> {
         final List<VertexProperty<Object>> vps = a.properties("foo").collect();
         log.debug(() -> vps.stream());
         assertEquals(3, vps.size());
@@ -400,8 +418,8 @@ public class TestBlazeGraph extends TestCase {
         a.remove();
         graph.tx().commit();
         log.debug(() -> "\n"+graph.dumpStore());
-        });
         assertEquals(0, a.properties().count());
+        
     }
     
     public void testSwitchCardinality() throws Exception {

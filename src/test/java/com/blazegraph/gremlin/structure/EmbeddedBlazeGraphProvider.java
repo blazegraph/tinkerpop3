@@ -1,3 +1,25 @@
+/**
+Copyright (C) SYSTAP, LLC 2006-2015.  All rights reserved.
+
+Contact:
+     SYSTAP, LLC
+     2501 Calvert ST NW #106
+     Washington, DC 20008
+     licenses@systap.com
+
+This program is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; version 2 of the License.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with this program; if not, write to the Free Software
+Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
+*/
 package com.blazegraph.gremlin.structure;
 
 import java.io.File;
@@ -14,14 +36,22 @@ import org.apache.tinkerpop.gremlin.LoadGraphWith;
 import org.apache.tinkerpop.gremlin.LoadGraphWith.GraphData;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Graph;
+import org.openrdf.model.impl.URIImpl;
 
 import com.bigdata.journal.BufferMode;
 import com.bigdata.journal.Journal;
 import com.bigdata.rdf.axioms.NoAxioms;
+import com.bigdata.rdf.internal.InlineURIFactory;
+import com.bigdata.rdf.internal.MultipurposeIDHandler;
 import com.bigdata.rdf.sail.BigdataSail;
 import com.bigdata.rdf.sail.BigdataSailRepository;
+import com.bigdata.rdf.sail.RDRHistory;
 import com.bigdata.rdf.store.AbstractTripleStore;
+import com.bigdata.rdf.store.BD;
+import com.bigdata.rdf.vocab.BaseVocabularyDecl;
+import com.bigdata.rdf.vocab.core.BigdataCoreVocabulary_v20151106;
 import com.bigdata.rdf.vocab.core.BigdataCoreVocabulary_v20151210;
+import com.bigdata.rdf.vocab.decls.GeoSpatialVocabularyDecl;
 import com.blazegraph.gremlin.util.Code;
 
 public class EmbeddedBlazeGraphProvider extends AbstractGraphProvider {
@@ -95,6 +125,12 @@ public class EmbeddedBlazeGraphProvider extends AbstractGraphProvider {
         }});
     }
     
+    public static BlazeGraphEmbedded open(final Map<String, String> overrides) {
+        return BlazeGraphEmbedded.open(new BaseConfiguration() {{
+            this.setProperty(BlazeGraphEmbedded.Options.REPOSITORY, getRepository(overrides));
+        }});
+    }
+    
     private static final Map<String,String> repos = new HashMap<>();
     private static synchronized BigdataSailRepository getRepository(final String name) {
         final String journal;
@@ -115,6 +151,12 @@ public class EmbeddedBlazeGraphProvider extends AbstractGraphProvider {
     
     private static BigdataSailRepository getRepository() {
         final Properties props = getProperties(journal());
+        return getRepository(props);
+    }
+    
+    private static BigdataSailRepository getRepository(final Map<String,String> overrides) {
+        final Properties props = getProperties(journal());
+        overrides.entrySet().forEach(e -> props.setProperty(e.getKey(), e.getValue()));
         return getRepository(props);
     }
     
@@ -158,18 +200,71 @@ public class EmbeddedBlazeGraphProvider extends AbstractGraphProvider {
 //        props.setProperty(BigdataGraph.Options.READ_FROM_WRITE_CONNECTION, "true");
 
         // vocabulary and extensions
-        props.setProperty(AbstractTripleStore.Options.VOCABULARY_CLASS, BigdataCoreVocabulary_v20151210.class.getName());
+        props.setProperty(AbstractTripleStore.Options.VOCABULARY_CLASS, CustomCoreVocab.class.getName());
 //        props.setProperty(AbstractTripleStore.Options.EXTENSION_FACTORY_CLASS, CompressedTimestampExtensionFactory.class.getName());
         
         /*
-         * Inline string literals up to 5 characters.
+         * Inline string literals up to 10 characters.
          */
         props.setProperty(AbstractTripleStore.Options.INLINE_TEXT_LITERALS, "true");
-        props.setProperty(AbstractTripleStore.Options.MAX_INLINE_TEXT_LENGTH, "5");
+        props.setProperty(AbstractTripleStore.Options.MAX_INLINE_TEXT_LENGTH, "10");
+        
+        /*
+         * Inline PG URIs up to 10 characters.
+         */
+        props.setProperty(AbstractTripleStore.Options.INLINE_URI_FACTORY_CLASS,
+                CustomInlineURIFactory.class.getName());
 
         return props;
         
     }
+    
+    public static class CustomInlineURIFactory extends InlineURIFactory {
+        
+        public CustomInlineURIFactory() {
+            addHandler(new MultipurposeIDHandler(BlazeValueFactory.Defaults.NAMESPACE, 10));
+        }
+        
+    }
+    
+    public static class CustomCoreVocab extends BigdataCoreVocabulary_v20151210 {
+
+        /**
+         * De-serialization ctor.
+         */
+        public CustomCoreVocab() {
+            
+            super();
+            
+        }
+        
+        /**
+         * Used by {@link AbstractTripleStore#create()}.
+         * 
+         * @param namespace
+         *            The namespace of the KB instance.
+         */
+        public CustomCoreVocab(final String namespace) {
+
+            super(namespace);
+            
+        }
+
+        @Override
+        protected void addValues() {
+
+            super.addValues();
+
+            /*
+             * Some new URIs for graph and RDR management.
+             */
+            addDecl(new BaseVocabularyDecl(
+                    BlazeValueFactory.Defaults.NAMESPACE));
+
+        }
+
+    }
+    
     
 
 }

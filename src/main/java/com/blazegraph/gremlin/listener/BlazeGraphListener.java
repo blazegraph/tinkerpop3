@@ -66,6 +66,9 @@ public interface BlazeGraphListener {
         // noop default impl
     }
 
+    /**
+     * Notification of a transaction abort.
+     */
     default void transactionAborted() {
         // noop default impl
     }

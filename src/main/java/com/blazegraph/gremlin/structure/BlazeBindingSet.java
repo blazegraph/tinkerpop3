@@ -22,6 +22,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 package com.blazegraph.gremlin.structure;
 
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
@@ -35,19 +36,19 @@ public class BlazeBindingSet implements Iterable<Map.Entry<String,Object>> {
     }
     
     public Object get(final String key) {
-        return this.vals.get(key);
+        return vals.get(key);
     }
     
     public boolean isBound(final String key) {
-        return this.vals.containsKey(key);
+        return vals.containsKey(key);
     }
 
-    public Set<String> getKeys() {
-        return this.vals.keySet();
+    public Set<String> keys() {
+        return Collections.unmodifiableSet(vals.keySet());
     }
     
-    public Map<String, Object> get() {
-        return vals;
+    public Map<String, Object> map() {
+        return Collections.unmodifiableMap(vals);
     }
 
     @Override
