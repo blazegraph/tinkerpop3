@@ -14,8 +14,11 @@ import org.openrdf.model.URI;
 import org.openrdf.model.Value;
 
 import com.bigdata.rdf.internal.impl.extensions.CompressedTimestampExtension;
+import com.bigdata.rdf.internal.impl.literal.PackedLongIV;
 import com.bigdata.rdf.model.BigdataBNode;
 import com.bigdata.rdf.model.BigdataStatement;
+import com.bigdata.rdf.sail.RDRHistory;
+import com.bigdata.rdf.sparql.ast.QueryHints;
 
 public class SparqlGenerator {
 
@@ -106,20 +109,44 @@ public class SparqlGenerator {
                 "    {\n" +
                 "        <S> <P> ?o . " +
                 "        filter(?o != O) .\n" +
-                "        filter(datatype(?o) != <"+CompressedTimestampExtension.COMPRESSED_TIMESTAMP+">) .\n" +
+                "        filter(datatype(?o) != <"+PackedLongIV.PACKED_LONG+">) .\n" +
                 "        optional {\n" +
                 "           bind(<<<S> <P> ?o>> as ?sid) .\n" +
                 "           ?sid ?pp ?oo .\n" +
                 "        }\n" +
                 "    } union {\n" +
                 "        <S> <P> ?vp . " +
-                "        filter(datatype(?vp) = <"+CompressedTimestampExtension.COMPRESSED_TIMESTAMP+">) .\n" +
+                "        filter(datatype(?vp) = <"+PackedLongIV.PACKED_LONG+">) .\n" +
                 "        optional {\n" +
                 "           bind(<<<S> <P> ?o>> as ?sid) .\n" +
                 "           ?sid ?pp ?oo .\n" +
                 "        }\n" +
                 "    }\n" +
                 "}";
+        
+        /**
+         * Sparql template for history query.
+         * 
+         * TODO FIXME Does not show history of VertexProperties.  Need to
+         * verify that RDR syntax works in values clause.
+         */
+        String HISTORY =
+                "prefix hint: <"+QueryHints.NAMESPACE+">\n" +
+                "select ?sid ?action ?time where {\n"+
+                     VALUES + 
+                "    {\n" +
+                "        bind(<< ?id ?p ?o >> as ?sid) .\n" + // vertices
+                "        hint:Prior hint:history true .\n" +
+                "    } union {\n" +
+                "        bind(<< ?from ?id ?to >> as ?edge) .\n" + // edges
+                "        bind(<< ?edge ?p ?o >> as ?sid) .\n" +
+                "    }\n" +
+                "    ?sid ?action ?time ." +
+                "    filter(?action in (<"+RDRHistory.Vocab.ADDED+">," +
+                                       "<"+RDRHistory.Vocab.REMOVED+">)) .\n" +
+                "    hint:Query hint:history true .\n" +
+                "}";
+
          
     }
 
@@ -219,8 +246,8 @@ public class SparqlGenerator {
     public String edgesFromVertex(final BlazeVertex src, final Direction dir,
             final List<Literal> edgeLabels) {
         final URI id = src.rdfId();
-        final StringBuilder vc = new StringBuilder();
-        buildValuesClause(vc, "?src", asList(id));
+        final StringBuilder vc = buildValuesClause(
+                new StringBuilder(), "?src", asList(id));
         if (!edgeLabels.isEmpty()) {
             buildValuesClause(vc, "?label", edgeLabels);
         }
@@ -237,6 +264,14 @@ public class SparqlGenerator {
                 .replace("S", s.toString())
                 .replace("P", p.toString())
                 .replace("O", o.toString());
+    }
+    
+    public String history(final List<URI> uris) {
+        final StringBuilder vc = buildValuesClause(
+                new StringBuilder(), "?s", uris);
+        final String queryStr = 
+                Templates.HISTORY.replace(Templates.VALUES, vc.toString());
+        return queryStr;
     }
     
     private StringBuilder buildValuesClause(final StringBuilder sb, 

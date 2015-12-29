@@ -98,7 +98,7 @@ public class EmptyBlazeVertexProperty<V> extends BlazeVertexProperty<V> {
 
     @Override
     public <U> CloseableIterator<Property<U>> properties(String... propertyKeys) {
-        return CloseableIterators.emptyIterator();
+        return CloseableIterator.emptyIterator();
     }
 
 }

@@ -1,20 +1,23 @@
 package com.blazegraph.gremlin.util;
 
+import static java.util.stream.Collectors.toList;
+
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-import java.util.stream.Collectors;
+import java.util.function.Consumer;
 import java.util.stream.Stream;
 
 public interface CloseableIterator<E> extends Iterator<E>, AutoCloseable {
     
     /**
-     * You MUST close this iterator or auto-close within a try-with-resources.
+     * You MUST close this iterator or auto-close with a try-with-resources.
      */
     @Override
     void close();
     
     /**
-     * You MUST close this stream or auto-close within a try-with-resources.
+     * You MUST close this stream or auto-close with a try-with-resources.
      */
     default Stream<E> stream() {
         return Streams.of(this).onClose(() -> close());
@@ -24,10 +27,8 @@ public interface CloseableIterator<E> extends Iterator<E>, AutoCloseable {
      * Collect the elements into a list.  This will close the iterator.
      */
     default List<E> collect() {
-        try {
-            return Streams.of(this).collect(Collectors.toList());
-        } finally {
-            close();
+        try (Stream<E> s = stream()) {
+            return s.collect(toList());
         }
     }
     
@@ -35,21 +36,22 @@ public interface CloseableIterator<E> extends Iterator<E>, AutoCloseable {
      * Count the elements.  This will close the iterator.
      */
     default long count() {
-        try {
-            return Streams.of(this).count();
-        } finally {
-            close();
+        try (Stream<E> s = stream()) {
+            return s.count();
         }
+//        try {
+//            return Streams.of(this).count();
+//        } finally {
+//            close();
+//        }
     }
     
     /**
      * Count the distinct elements.  This will close the iterator.
      */
     default long countDistinct() {
-        try {
-            return Streams.of(this).distinct().count();
-        } finally {
-            close();
+        try (Stream<E> s = stream()) {
+            return s.distinct().count();
         }
     }
     
@@ -70,13 +72,28 @@ public interface CloseableIterator<E> extends Iterator<E>, AutoCloseable {
             public T next() { 
                 return it.next(); 
             }
-
+            
+            @Override
+            public void remove() {
+                it.remove();
+            }
+            
             @Override
             public void close() { 
                 close.run(); 
             }
             
+            @Override
+            public void forEachRemaining(Consumer<? super T> action) {
+                it.forEachRemaining(action);
+            }
+
         };
     }
     
+    public static <T> CloseableIterator<T> emptyIterator() {
+        final Iterator<T> it = Collections.<T>emptyIterator();
+        return of(it, () -> {});
+    }
+
 }

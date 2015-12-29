@@ -1,4 +1,4 @@
-package com.blazegraph.gremlin.util;
+package com.blazegraph.gremlin.listener;
 
 import com.bigdata.rdf.changesets.IChangeLog;
 import com.bigdata.rdf.changesets.IChangeRecord;

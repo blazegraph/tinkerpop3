@@ -32,7 +32,7 @@ public class TestBlazeGraph extends TestCase {
     
     @Override
     public void setUp() throws Exception {
-        final LocalBlazeGraphProvider provider = new LocalBlazeGraphProvider(); 
+        final EmbeddedBlazeGraphProvider provider = new EmbeddedBlazeGraphProvider(); 
         this.graph = provider.open();
     }
     
@@ -381,7 +381,8 @@ public class TestBlazeGraph extends TestCase {
         graph.tx().commit();
 
         log.debug(() -> "\n"+graph.dumpStore());
-        
+
+        graph.readFromWriteCxn(() -> {
         final List<VertexProperty<Object>> vps = a.properties("foo").collect();
         log.debug(() -> vps.stream());
         assertEquals(3, vps.size());
@@ -399,8 +400,8 @@ public class TestBlazeGraph extends TestCase {
         a.remove();
         graph.tx().commit();
         log.debug(() -> "\n"+graph.dumpStore());
+        });
         assertEquals(0, a.properties().count());
-        
     }
     
     public void testSwitchCardinality() throws Exception {

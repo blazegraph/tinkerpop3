@@ -95,11 +95,17 @@ public class BlazeVertex extends AbstractBlazeElement implements Vertex, BlazeEl
     @Override
     public CloseableIterator<Vertex> vertices(final Direction direction, 
             final String... edgeLabels) {
-        final CloseableIterator<Edge> edges = edges(direction, edgeLabels);
-        return CloseableIterators.of(edges, e -> {
-            final BlazeEdge be = (BlazeEdge) e;
-            return be.outVertex().equals(this) ? be.inVertex() : be.outVertex();
-        });
+//        final CloseableIterator<Edge> edges = edges(direction, edgeLabels);
+//        return CloseableIterators.of(edges, e -> {
+//            final BlazeEdge be = (BlazeEdge) e;
+//            return be.outVertex().equals(this) ? be.inVertex() : be.outVertex();
+//        });
+        return CloseableIterator.of(edges(direction, edgeLabels)
+                    .stream()
+                    .map(e -> {
+                        final BlazeEdge be = (BlazeEdge) e;
+                        return be.outVertex().equals(this) ? be.inVertex() : be.outVertex();
+                    }));
     }
     
     @Override

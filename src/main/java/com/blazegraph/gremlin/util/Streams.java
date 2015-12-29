@@ -13,4 +13,8 @@ public class Streams {
                 Spliterators.spliteratorUnknownSize(it, Spliterator.ORDERED), false);
     }
     
+    public static final <T> Stream<T> of(final CloseableIterator<T> it) {
+        return of((Iterator<T>) it).onClose(() -> it.close());
+    }
+    
 }

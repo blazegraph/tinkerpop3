@@ -490,7 +490,7 @@ public class BlazeGraphEmbedded extends BlazeGraph {
                 return Optional.empty();
             }
             
-            return toGraphAtom(record.getStatement())
+            return transforms.graphAtom.apply(record.getStatement())
                         .map(atom -> new BlazeGraphEdit(action, atom));
             
         }

@@ -1,10 +1,14 @@
 package com.blazegraph.gremlin.structure;
 
+import static com.blazegraph.gremlin.util.Lambdas.toMap;
 import static java.util.stream.Collectors.toList;
 
+import java.util.AbstractMap.SimpleEntry;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
@@ -51,6 +55,7 @@ import com.blazegraph.gremlin.listener.BlazeGraphEdit.Action;
 import com.blazegraph.gremlin.util.CloseableIterator;
 import com.blazegraph.gremlin.util.Code;
 import com.blazegraph.gremlin.util.LambdaLogger;
+import com.blazegraph.gremlin.util.Lambdas;
 import com.blazegraph.gremlin.util.Streams;
 
 import info.aduna.iteration.CloseableIteration;
@@ -111,7 +116,7 @@ public abstract class BlazeGraph implements Graph {
      * 
      * Default is 0 (unlimited)
      */
-    protected final int maxQueryTime;
+    private final int maxQueryTime;
     
     /**
      * URI used for labeling elements.
@@ -122,6 +127,8 @@ public abstract class BlazeGraph implements Graph {
      * URI used for list item values.
      */
     private final URI VALUE;
+    
+    protected final Transforms transforms;
     
     private transient volatile boolean readFromWriteCxn = false;
     
@@ -146,6 +153,8 @@ public abstract class BlazeGraph implements Graph {
         
         this.LABEL = vf.labelURI();
         this.VALUE = vf.valueURI();
+        
+        this.transforms = new Transforms();
     }
     
     /**
@@ -443,7 +452,7 @@ public abstract class BlazeGraph implements Graph {
         final RepositoryConnection cxn = openRead();
         return Code.wrapThrow(() -> { 
             final Stream<Vertex> stream = select(cxn, queryStr, nextQueryId())
-                    .map(vertexTransform);
+                    .map(transforms.vertex);
             return CloseableIterator.of(stream);
         });
     }
@@ -476,7 +485,7 @@ public abstract class BlazeGraph implements Graph {
         final RepositoryConnection cxn = openRead();
         return Code.wrapThrow(() -> {
             final Stream<Edge> stream = select(cxn, queryStr, nextQueryId())
-                    .map(edgeTransform);
+                    .map(transforms.edge);
             return CloseableIterator.of(stream);
         });
 //        return Code.wrapThrow(() -> 
@@ -523,7 +532,7 @@ public abstract class BlazeGraph implements Graph {
         final RepositoryConnection cxn = openRead();
         return Code.wrapThrow(() -> {
             final Stream<Edge> stream = select(cxn, queryStr, nextQueryId())
-                    .map(edgeTransform);
+                    .map(transforms.edge);
             return CloseableIterator.of(stream);
         });
 //        return Code.wrapThrow(() -> 
@@ -545,7 +554,7 @@ public abstract class BlazeGraph implements Graph {
         final RepositoryConnection cxn = openRead();
         return Code.wrapThrow(() -> { 
             final Stream<Property<V>> stream = select(cxn, queryStr, nextQueryId())
-                    .map(new PropertyTransform<V>(element)); 
+                    .map(transforms.<V>property(element)); 
             return CloseableIterator.of(stream);
         });
 //        return Code.wrapThrow(() -> 
@@ -565,7 +574,7 @@ public abstract class BlazeGraph implements Graph {
         final RepositoryConnection cxn = openRead();
         return Code.wrapThrow(() -> {
             final Stream<VertexProperty<V>> stream = select(cxn, queryStr, nextQueryId())
-                    .map(new VertexPropertyTransform<V>(vertex)); 
+                    .map(transforms.<V>vertexProperty(vertex)); 
             return CloseableIterator.of(stream);
         });
 //        return Code.wrapThrow(() -> 
@@ -683,15 +692,257 @@ public abstract class BlazeGraph implements Graph {
 //        
 //    }
     
-    public Function<BindingSet, Vertex> vertexTransform = bs -> {
-        
-        final BigdataURI uri = (BigdataURI) bs.getValue("id");
-        final Literal label = (Literal) bs.getValue("label");
-        final BlazeVertex vertex = new BlazeVertex(BlazeGraph.this, uri, label);
-        return vertex;
-        
-    };
+    protected class Transforms {
     
+        protected final 
+        Function<BindingSet, Vertex> vertex = bs -> {
+            
+            final BigdataURI uri = (BigdataURI) bs.getValue("id");
+            final Literal label = (Literal) bs.getValue("label");
+            final BlazeVertex vertex = new BlazeVertex(BlazeGraph.this, uri, label);
+            return vertex;
+            
+        };
+        
+        protected final 
+        Function<BindingSet, Edge> edge = bs -> {
+            
+            final BigdataBNode s = (BigdataBNode) bs.getValue("sid");
+            final BigdataStatement stmt = s.getStatement();
+            final Literal label = (Literal) bs.getValue("label");
+//            if (bs.hasBinding("fromLabel") && bs.hasBinding("toLabel")) {
+                final BigdataURI fromURI = (BigdataURI) stmt.getSubject();
+                final Literal fromLabel = (Literal) bs.getValue("fromLabel");
+                final BlazeVertex from = 
+                        new BlazeVertex(BlazeGraph.this, fromURI, fromLabel);
+                
+                final BigdataURI toURI = (BigdataURI) stmt.getObject();
+                final Literal toLabel = (Literal) bs.getValue("toLabel");
+                final BlazeVertex to = 
+                        new BlazeVertex(BlazeGraph.this, toURI, toLabel);
+                return new BlazeEdge(BlazeGraph.this, stmt, label, from, to);
+//            } else {
+//                return new BlazeEdge(BlazeGraph.this, stmt, label);
+//            }
+                
+        };
+        
+        protected final <V> Function<BindingSet, Property<V>> 
+        property(final BlazeReifiedElement e) {
+            
+            return bs -> {
+                log.debug(() -> bs);
+                final URI p = (URI) bs.getValue("p");
+                final Literal o = (Literal) bs.getValue("o");
+                final BlazeProperty<V> prop = 
+                        new BlazeProperty<>(BlazeGraph.this, e, p, o);
+                return prop;
+            };
+            
+        }
+        
+        protected final <V> Function<BindingSet, VertexProperty<V>> 
+        vertexProperty(final BlazeVertex v) {
+            
+            return bs -> {
+                final URI p = (URI) bs.getValue("p");
+                final Literal o = (Literal) bs.getValue("o");
+                final BigdataBNode sid = (BigdataBNode) bs.getValue("vp");
+                final String vpId = vertexPropertyId(sid.getStatement());
+                final BlazeProperty<V> prop = 
+                        new BlazeProperty<>(BlazeGraph.this, v, p, o);
+                final BlazeVertexProperty<V> bvp = 
+                        new BlazeVertexProperty<>(prop, vpId, sid);
+                return bvp;
+            };
+            
+        }
+        
+        /**
+         * Convert SPARQL/RDF results into PG form.
+         */
+        protected final 
+        Function<BindingSet,BlazeBindingSet> bindingSet = bs -> {
+            
+            final Map<String, Object> map = bs.getBindingNames().stream()
+                .map(key -> new SimpleEntry<String,Object>(key, bs.getBinding(key).getValue()))
+                .map(e -> {
+                    final String key = e.getKey();
+                    final Object val = e.getValue();
+                    final SimpleEntry<String,Object> _e;
+                    if (val instanceof Literal) {
+                        _e = new SimpleEntry<>(key, vf.fromLiteral((Literal) val));
+                    } else if (val instanceof URI) {
+                        _e = new SimpleEntry<>(key, vf.fromURI((URI) val));
+                    } else {
+                        final BigdataBNode sid = (BigdataBNode) val;
+                        final BigdataStatement stmt = sid.getStatement();
+                        if (stmt.getObject() instanceof URI) {
+                            // return edge id
+                            _e = new SimpleEntry<>(key, vf.fromURI(stmt.getPredicate()));
+                        } else {
+                            // return vertex property id
+                            _e = new SimpleEntry<>(key, vertexPropertyId(stmt)); 
+                        }
+                    }
+                    return _e;
+                })
+                .collect(toMap(LinkedHashMap::new));
+                        
+            return new BlazeBindingSet(map);
+            
+        };
+        
+        /**
+         * Convert a unit of RDF data to an atomic unit of PG data.
+         */
+        protected final 
+        Function<Statement, Optional<BlazeGraphAtom>> graphAtom = stmt -> {
+
+            final Resource s = stmt.getSubject();
+            final URI p = stmt.getPredicate();
+            final Value o = stmt.getObject();
+            
+            if (s instanceof URI) {
+                
+                if (o instanceof URI) {
+                    // blaze:a blaze:x blaze:b
+                    
+                    /*
+                     * We actually want to ignore these and wait for
+                     * <<blaze:a blaze:x blaze:b>> rdfs:label "label" .
+                     * to emit a VertexAtom.
+                     */
+                    return Optional.empty();
+                }
+                
+                final BigdataURI uri = (BigdataURI) s;
+                final String vertexId = vf.fromURI(uri);
+                final Literal lit = (Literal) o;
+                
+                if (LABEL.equals(p)) {
+                    // blaze:a rdfs:label "label" .
+                    
+                    final String label = (String) vf.fromLiteral(lit);
+                    
+                    return Optional.of(
+                            new BlazeGraphAtom.VertexAtom(vertexId, label));
+                    
+                } else {
+
+                    final URI dt = lit.getDatatype();
+                    
+                    if (dt != null && PackedLongIV.PACKED_LONG.equals(dt)) {
+                        // blaze:a blaze:key "0"^^"blaze:packedLong"
+                        
+                        /*
+                         * We actually want to ignore these and wait for
+                         * <<blaze:a blaze:key "0"^^"blaze:packedLong">> rdfs:value "val" .
+                         * to emit a VertexPropertyAtom.
+                         */
+                        return Optional.empty();
+                        
+                    } else {
+                        // blaze:a blaze:key "val" .
+                        
+                        final String key = vf.fromURI(p);
+                        final Object val = vf.fromLiteral(lit);
+                        final String vpId = vertexPropertyId(uri, p, lit);
+                        
+                        return Optional.of(
+                            new BlazeGraphAtom.VertexPropertyAtom(vertexId, key, val, vpId));
+                        
+                    }
+                    
+                }
+                
+            } else { // s instanceof BigdataBNode
+                
+                final BigdataBNode sid = (BigdataBNode) s;
+                final BigdataStatement reified = sid.getStatement();
+                final Literal lit = (Literal) o;
+                
+                if (LABEL.equals(p)) {
+                    // <<blaze:a blaze:x blaze:b>> rdfs:label "label" .
+                    
+                    final String edgeId = vf.fromURI(reified.getPredicate());
+                    final String fromId = vf.fromURI((URI) reified.getSubject());
+                    final String toId = vf.fromURI((URI) reified.getObject());
+                    final String label = (String) vf.fromLiteral(lit);
+                    
+                    return Optional.of(
+                        new BlazeGraphAtom.EdgeAtom(edgeId, label, fromId, toId));
+                    
+                } else if (VALUE.equals(p)) {
+                    // <<blaze:a blaze:key "0"^^"blaze:packedLong">> rdfs:value "val" .
+                    
+                    final String vertexId = vf.fromURI((URI) reified.getSubject());
+                    final String key = vf.fromURI(reified.getPredicate());
+                    final Object val = vf.fromLiteral(lit);
+                    final String vpId = vertexPropertyId(reified);
+                    
+                    return Optional.of(
+                        new BlazeGraphAtom.VertexPropertyAtom(vertexId, key, val, vpId));
+
+                } else {
+                    
+                    final String key = vf.fromURI(p);
+                    final Object val = vf.fromLiteral(lit);
+                    
+                    if (reified.getObject() instanceof URI) {
+                        // <<blaze:a blaze:x blaze:b>> blaze:key "val" .
+
+                        final String edgeId = vf.fromURI(reified.getPredicate());
+                        
+                        return Optional.of(
+                                new BlazeGraphAtom.PropertyAtom(edgeId, key, val));
+                                    
+                    } else {
+                        // <<blaze:a blaze:key "val">> blaze:key "val" .
+                        // <<blaze:a blaze:key "0"^^"blaze:packedLong">> blaze:key "val" .
+                        
+                        final String vpId = vertexPropertyId(reified);
+                        
+                        return Optional.of(
+                            new BlazeGraphAtom.PropertyAtom(vpId, key, val));
+                                
+                    }
+                    
+                }
+                
+            }
+            
+        };
+        
+        protected final 
+        Function<BindingSet,Optional<BlazeGraphEdit>> history = bs -> {
+            
+          final BigdataBNode sid = (BigdataBNode) bs.getValue("sid");
+          final BigdataStatement stmt = sid.getStatement();
+          final URI a = (URI) bs.getValue("action");
+          final Literal t = (Literal) bs.getValue("time");
+          
+          if (!t.getDatatype().equals(XSD.DATETIME)) {
+              throw new RuntimeException("Unexpected timestamp in result: " + bs);
+          }
+          
+          final BlazeGraphEdit.Action action;
+          if (a.equals(RDRHistory.Vocab.ADDED)) {
+              action = Action.Add;
+          } else if (a.equals(RDRHistory.Vocab.REMOVED)) {
+              action = Action.Remove;
+          } else {
+              throw new RuntimeException("Unexpected action in result: " + bs);
+          }
+          
+          final long timestamp = DateTimeExtension.getTimestamp(t.getLabel());
+          return graphAtom.apply(stmt)
+                          .map(atom -> new BlazeGraphEdit(action, atom, timestamp));
+          
+      };
+      
+    }
+        
 //    public class VertexIterator extends GraphIterator<Vertex, BindingSet> {
 //        
 //        public VertexIterator(final RepositoryConnection cxn,
@@ -705,28 +956,6 @@ public abstract class BlazeGraph implements Graph {
 //        
 //    }
 
-    public Function<BindingSet, Edge> edgeTransform = bs -> {
-        
-        final BigdataBNode s = (BigdataBNode) bs.getValue("sid");
-        final BigdataStatement stmt = s.getStatement();
-        final Literal label = (Literal) bs.getValue("label");
-//        if (bs.hasBinding("fromLabel") && bs.hasBinding("toLabel")) {
-            final BigdataURI fromURI = (BigdataURI) stmt.getSubject();
-            final Literal fromLabel = (Literal) bs.getValue("fromLabel");
-            final BlazeVertex from = 
-                    new BlazeVertex(BlazeGraph.this, fromURI, fromLabel);
-            
-            final BigdataURI toURI = (BigdataURI) stmt.getObject();
-            final Literal toLabel = (Literal) bs.getValue("toLabel");
-            final BlazeVertex to = 
-                    new BlazeVertex(BlazeGraph.this, toURI, toLabel);
-            return new BlazeEdge(BlazeGraph.this, stmt, label, from, to);
-//        } else {
-//            return new BlazeEdge(BlazeGraph.this, stmt, label);
-//        }
-            
-    };
-    
 //    public class EdgeIterator extends GraphIterator<Edge, BindingSet> {
 //        
 //        public EdgeIterator(final RepositoryConnection cxn,
@@ -740,24 +969,24 @@ public abstract class BlazeGraph implements Graph {
 //        
 //    }
     
-    public class PropertyTransform<V> 
-            implements Function<BindingSet, Property<V>> {
-        
-        private final BlazeReifiedElement e;
-        
-        public PropertyTransform(final BlazeReifiedElement e) {
-            this.e = e;
-        }
-        
-        public Property<V> apply(final BindingSet bs) {
-            log.debug(() -> bs);
-            final URI p = (URI) bs.getValue("p");
-            final Literal o = (Literal) bs.getValue("o");
-            final BlazeProperty<V> prop = 
-                    new BlazeProperty<>(BlazeGraph.this, e, p, o);
-            return prop;
-        }
-    };
+//    public class PropertyTransform<V> 
+//            implements Function<BindingSet, Property<V>> {
+//        
+//        private final BlazeReifiedElement e;
+//        
+//        public PropertyTransform(final BlazeReifiedElement e) {
+//            this.e = e;
+//        }
+//        
+//        public Property<V> apply(final BindingSet bs) {
+//            log.debug(() -> bs);
+//            final URI p = (URI) bs.getValue("p");
+//            final Literal o = (Literal) bs.getValue("o");
+//            final BlazeProperty<V> prop = 
+//                    new BlazeProperty<>(BlazeGraph.this, e, p, o);
+//            return prop;
+//        }
+//    };
     
 //    public class PropertyIterator<V> 
 //            extends GraphIterator<Property<V>, BindingSet> {
@@ -776,28 +1005,28 @@ public abstract class BlazeGraph implements Graph {
 //        
 //    }
     
-    public class VertexPropertyTransform<V> 
-            implements Function<BindingSet, VertexProperty<V>> {
-        
-        private final BlazeVertex v;
-        
-        public VertexPropertyTransform(final BlazeVertex v) {
-            this.v = v;
-        }
-        
-        public VertexProperty<V> apply(final BindingSet bs) {
-            final URI p = (URI) bs.getValue("p");
-            final Literal o = (Literal) bs.getValue("o");
-            final BigdataBNode sid = (BigdataBNode) bs.getValue("vp");
-            final String vpId = vertexPropertyId(sid.getStatement());
-            final BlazeProperty<V> prop = 
-                    new BlazeProperty<>(BlazeGraph.this, v, p, o);
-            final BlazeVertexProperty<V> bvp = 
-                    new BlazeVertexProperty<>(prop, vpId, sid);
-            return bvp;
-        };
-        
-    }
+//    public class VertexPropertyTransform<V> 
+//            implements Function<BindingSet, VertexProperty<V>> {
+//        
+//        private final BlazeVertex v;
+//        
+//        public VertexPropertyTransform(final BlazeVertex v) {
+//            this.v = v;
+//        }
+//        
+//        public VertexProperty<V> apply(final BindingSet bs) {
+//            final URI p = (URI) bs.getValue("p");
+//            final Literal o = (Literal) bs.getValue("o");
+//            final BigdataBNode sid = (BigdataBNode) bs.getValue("vp");
+//            final String vpId = vertexPropertyId(sid.getStatement());
+//            final BlazeProperty<V> prop = 
+//                    new BlazeProperty<>(BlazeGraph.this, v, p, o);
+//            final BlazeVertexProperty<V> bvp = 
+//                    new BlazeVertexProperty<>(prop, vpId, sid);
+//            return bvp;
+//        };
+//        
+//    }
 
 //    public class VertexPropertyIterator<V> 
 //            extends GraphIterator<VertexProperty<V>, BindingSet> {
@@ -884,8 +1113,7 @@ public abstract class BlazeGraph implements Graph {
     public CloseableIterator<BlazeGraphAtom> project(final String queryStr,
             String externalQueryId) throws Exception {
         
-        final RepositoryConnection cxn = readFromWriteCxn ? 
-                writeCxn() : readCxn();
+        final RepositoryConnection cxn = openRead();
         
 //        if (sparqlLog.isTraceEnabled()) {
 //            sparqlLog.trace("query:\n"+ (queryStr.length() <= SPARQL_LOG_MAX 
@@ -953,7 +1181,7 @@ public abstract class BlazeGraph implements Graph {
 
         final Stream<BlazeGraphAtom> stream =
                 project(cxn, queryStr, externalQueryId)
-                        .map(BlazeGraph.this::toGraphAtom)
+                        .map(transforms.graphAtom)
                         .filter(Optional::isPresent)
                         .map(Optional::get);
         
@@ -961,128 +1189,125 @@ public abstract class BlazeGraph implements Graph {
         
     }
     
-    /**
-     * Convert a unit of RDF data to an atomic unit of PG data.
-     */
-    protected Optional<BlazeGraphAtom> toGraphAtom(final Statement stmt) {
-        return toGraphAtom(stmt.getSubject(), stmt.getPredicate(), stmt.getObject());
-    }
-    
-    /**
-     * Convert a unit of RDF data to an atomic unit of PG data.
-     */
-    protected Optional<BlazeGraphAtom> toGraphAtom(final Resource s, final URI p, final Value o) {
-            
-        if (s instanceof URI) {
-            
-            if (o instanceof URI) {
-                // blaze:a blaze:x blaze:b
-                
-                /*
-                 * We actually want to ignore these and wait for
-                 * <<blaze:a blaze:x blaze:b>> rdfs:label "label" .
-                 * to emit a VertexAtom.
-                 */
-                return Optional.empty();
-            }
-            
-            final BigdataURI uri = (BigdataURI) s;
-            final String vertexId = vf.fromURI(uri);
-            final Literal lit = (Literal) o;
-            
-            if (LABEL.equals(p)) {
-                // blaze:a rdfs:label "label" .
-                
-                final String label = (String) vf.fromLiteral(lit);
-                
-                return Optional.of(
-                        new BlazeGraphAtom.VertexAtom(vertexId, label));
-                
-            } else {
-
-                final URI dt = lit.getDatatype();
-                
-                if (dt != null && PackedLongIV.PACKED_LONG.equals(dt)) {
-                    // blaze:a blaze:key "0"^^"blaze:packedLong"
-                    
-                    /*
-                     * We actually want to ignore these and wait for
-                     * <<blaze:a blaze:key "0"^^"blaze:packedLong">> rdfs:value "val" .
-                     * to emit a VertexPropertyAtom.
-                     */
-                    return Optional.empty();
-                    
-                } else {
-                    // blaze:a blaze:key "val" .
-                    
-                    final String key = vf.fromURI(p);
-                    final Object val = vf.fromLiteral(lit);
-                    final String vpId = vertexPropertyId(uri, p, lit);
-                    
-                    return Optional.of(
-                        new BlazeGraphAtom.VertexPropertyAtom(vertexId, key, val, vpId));
-                    
-                }
-                
-            }
-            
-        } else { // s instanceof BigdataBNode
-            
-            final BigdataBNode sid = (BigdataBNode) s;
-            final BigdataStatement stmt = sid.getStatement();
-            final Literal lit = (Literal) o;
-            
-            if (LABEL.equals(p)) {
-                // <<blaze:a blaze:x blaze:b>> rdfs:label "label" .
-                
-                final String edgeId = vf.fromURI(stmt.getPredicate());
-                final String fromId = vf.fromURI((URI) stmt.getSubject());
-                final String toId = vf.fromURI((URI) stmt.getObject());
-                final String label = (String) vf.fromLiteral(lit);
-                
-                return Optional.of(
-                    new BlazeGraphAtom.EdgeAtom(edgeId, label, fromId, toId));
-                
-            } else if (VALUE.equals(p)) {
-                // <<blaze:a blaze:key "0"^^"blaze:packedLong">> rdfs:value "val" .
-                
-                final String vertexId = vf.fromURI((URI) stmt.getSubject());
-                final String key = vf.fromURI(stmt.getPredicate());
-                final Object val = vf.fromLiteral(lit);
-                final String vpId = vertexPropertyId(stmt);
-                
-                return Optional.of(
-                    new BlazeGraphAtom.VertexPropertyAtom(vertexId, key, val, vpId));
-
-            } else {
-                
-                final String key = vf.fromURI(p);
-                final Object val = vf.fromLiteral(lit);
-                
-                if (stmt.getObject() instanceof URI) {
-                    // <<blaze:a blaze:x blaze:b>> blaze:key "val" .
-
-                    final String edgeId = vf.fromURI(stmt.getPredicate());
-                    
-                    return Optional.of(
-                            new BlazeGraphAtom.PropertyAtom(edgeId, key, val));
-                                
-                } else {
-                    // <<blaze:a blaze:key "val">> blaze:key "val" .
-                    // <<blaze:a blaze:key "0"^^"blaze:packedLong">> blaze:key "val" .
-                    
-                    final String vpId = vertexPropertyId(stmt);
-                    
-                    return Optional.of(
-                        new BlazeGraphAtom.PropertyAtom(vpId, key, val));
-                            
-                }
-                
-            }
-            
-        }
-        
-    }
+//    /**
+//     * Convert a unit of RDF data to an atomic unit of PG data.
+//     */
+//    protected Optional<BlazeGraphAtom> toGraphAtom(final Statement stmt) {
+//
+//        final Resource s = stmt.getSubject();
+//        final URI p = stmt.getPredicate();
+//        final Value o = stmt.getObject();
+//        
+//        if (s instanceof URI) {
+//            
+//            if (o instanceof URI) {
+//                // blaze:a blaze:x blaze:b
+//                
+//                /*
+//                 * We actually want to ignore these and wait for
+//                 * <<blaze:a blaze:x blaze:b>> rdfs:label "label" .
+//                 * to emit a VertexAtom.
+//                 */
+//                return Optional.empty();
+//            }
+//            
+//            final BigdataURI uri = (BigdataURI) s;
+//            final String vertexId = vf.fromURI(uri);
+//            final Literal lit = (Literal) o;
+//            
+//            if (LABEL.equals(p)) {
+//                // blaze:a rdfs:label "label" .
+//                
+//                final String label = (String) vf.fromLiteral(lit);
+//                
+//                return Optional.of(
+//                        new BlazeGraphAtom.VertexAtom(vertexId, label));
+//                
+//            } else {
+//
+//                final URI dt = lit.getDatatype();
+//                
+//                if (dt != null && PackedLongIV.PACKED_LONG.equals(dt)) {
+//                    // blaze:a blaze:key "0"^^"blaze:packedLong"
+//                    
+//                    /*
+//                     * We actually want to ignore these and wait for
+//                     * <<blaze:a blaze:key "0"^^"blaze:packedLong">> rdfs:value "val" .
+//                     * to emit a VertexPropertyAtom.
+//                     */
+//                    return Optional.empty();
+//                    
+//                } else {
+//                    // blaze:a blaze:key "val" .
+//                    
+//                    final String key = vf.fromURI(p);
+//                    final Object val = vf.fromLiteral(lit);
+//                    final String vpId = vertexPropertyId(uri, p, lit);
+//                    
+//                    return Optional.of(
+//                        new BlazeGraphAtom.VertexPropertyAtom(vertexId, key, val, vpId));
+//                    
+//                }
+//                
+//            }
+//            
+//        } else { // s instanceof BigdataBNode
+//            
+//            final BigdataBNode sid = (BigdataBNode) s;
+//            final BigdataStatement reified = sid.getStatement();
+//            final Literal lit = (Literal) o;
+//            
+//            if (LABEL.equals(p)) {
+//                // <<blaze:a blaze:x blaze:b>> rdfs:label "label" .
+//                
+//                final String edgeId = vf.fromURI(reified.getPredicate());
+//                final String fromId = vf.fromURI((URI) reified.getSubject());
+//                final String toId = vf.fromURI((URI) reified.getObject());
+//                final String label = (String) vf.fromLiteral(lit);
+//                
+//                return Optional.of(
+//                    new BlazeGraphAtom.EdgeAtom(edgeId, label, fromId, toId));
+//                
+//            } else if (VALUE.equals(p)) {
+//                // <<blaze:a blaze:key "0"^^"blaze:packedLong">> rdfs:value "val" .
+//                
+//                final String vertexId = vf.fromURI((URI) reified.getSubject());
+//                final String key = vf.fromURI(reified.getPredicate());
+//                final Object val = vf.fromLiteral(lit);
+//                final String vpId = vertexPropertyId(reified);
+//                
+//                return Optional.of(
+//                    new BlazeGraphAtom.VertexPropertyAtom(vertexId, key, val, vpId));
+//
+//            } else {
+//                
+//                final String key = vf.fromURI(p);
+//                final Object val = vf.fromLiteral(lit);
+//                
+//                if (reified.getObject() instanceof URI) {
+//                    // <<blaze:a blaze:x blaze:b>> blaze:key "val" .
+//
+//                    final String edgeId = vf.fromURI(reified.getPredicate());
+//                    
+//                    return Optional.of(
+//                            new BlazeGraphAtom.PropertyAtom(edgeId, key, val));
+//                                
+//                } else {
+//                    // <<blaze:a blaze:key "val">> blaze:key "val" .
+//                    // <<blaze:a blaze:key "0"^^"blaze:packedLong">> blaze:key "val" .
+//                    
+//                    final String vpId = vertexPropertyId(reified);
+//                    
+//                    return Optional.of(
+//                        new BlazeGraphAtom.PropertyAtom(vpId, key, val));
+//                            
+//                }
+//                
+//            }
+//            
+//        }
+//        
+//    }
     
     /**
      * Select results using a SPARQL query.
@@ -1102,8 +1327,7 @@ public abstract class BlazeGraph implements Graph {
     public CloseableIterator<BlazeBindingSet> select(final String queryStr,
             String extQueryId) throws Exception {
 
-        final RepositoryConnection cxn = readFromWriteCxn ? 
-                writeCxn() : readCxn();
+        final RepositoryConnection cxn = openRead();
         
 //        if (sparqlLog.isTraceEnabled()) {
 //            sparqlLog.trace("query:\n"+ (queryStr.length() <= SPARQL_LOG_MAX 
@@ -1162,32 +1386,7 @@ public abstract class BlazeGraph implements Graph {
         
         final Stream<BlazeBindingSet> stream = 
                 select(cxn, queryStr, extQueryId)
-                        .map(bs -> {
-                            /**
-                             * Convert SPARQL/RDF results into PG form.
-                             */
-                            final BlazeBindingSet bbs = new BlazeBindingSet();
-                            
-                            for (String key : bs.getBindingNames()) {
-                                
-                                final Value val= bs.getBinding(key).getValue();
-                                
-                                final Object o;
-                                if (val instanceof Literal) {
-                                    o = vf.fromLiteral((Literal) val);
-                                } else if (val instanceof URI) {
-                                    o = vf.fromURI((URI) val);
-                                } else {
-                                    continue;
-                                }
-                                
-                                bbs.put(key, o);
-                                
-                            }
-                            
-                            return bbs;
-                                
-                        });
+                        .map(transforms.bindingSet);
                         
         return CloseableIterator.of(stream);
             
@@ -1289,18 +1488,6 @@ public abstract class BlazeGraph implements Graph {
     }
     
     /**
-     * Sparql template for history query.
-     */
-    private static final String HISTORY_TEMPLATE =
-            "prefix hint: <"+QueryHints.NAMESPACE+">\n" +
-            "select ?s ?p ?o ?action ?time\n" +
-            "where {\n"+
-            "    bind(<< ?s ?p ?o >> as ?sid) . \n" +
-            "    hint:Prior hint:history true . \n" +
-            "    ?sid ?action ?time . \n" +
-            "}";
-    
-    /**
      * If history is enabled, return an iterator of historical graph edits 
      * related to any of the supplied ids.  To enable history, make sure
      * the database is in statement identifiers mode and that the RDR History
@@ -1312,43 +1499,18 @@ public abstract class BlazeGraph implements Graph {
      * @see {@link AbstractTripleStore.Options#RDR_HISTORY_CLASS}
      * @see {@link RDRHistory}
      */
-    public CloseableIterator<BlazeGraphEdit> history(final List<URI> ids) 
-            throws Exception {
-        final String randomUUID = nextQueryId();
-        return history(ids, randomUUID);
-    }
-
-    public CloseableIterator<BlazeGraphEdit> history(final List<URI> ids,
-            final String extQueryId) throws Exception {
-        
-//        final List<URI> ids = new LinkedList<URI>();
-//        for (Object id : vertexIds) {
-//            ids.add(vf.toVertexURI(id));
-//        }
-//        for (Object id : edgeIds) {
-//            ids.add(vf.toEdgeURI(id));
-//        }
-        
-        final StringBuilder sb = new StringBuilder(HISTORY_TEMPLATE);
-//        UUID queryId = null;
-        
-        if (ids.size() > 0) {
-            final StringBuilder vc = new StringBuilder();
-            vc.append("    values (?s) { \n");
-            for (URI id : ids) {
-                vc.append("        (<"+id+">) \n");
-            }
-            vc.append("    } \n");
-            sb.insert(sb.length()-1, vc.toString());
-        }
-        
-        final String queryStr = sb.toString();
+    public CloseableIterator<BlazeGraphEdit> history(final List<String> ids) {
+   
+        final List<URI> uris = 
+                ids.stream().map(vf::elementURI).collect(toList());
+        final String queryStr = sparql.history(uris);
                     
-        final RepositoryConnection cxn = readFromWriteCxn ? 
-                writeCxn() : readCxn();
-        
-        final Stream<BlazeGraphEdit> stream = select(cxn, queryStr, extQueryId)
-                        .map(historyTransform);
+        final RepositoryConnection cxn = openRead();
+        final Stream<BlazeGraphEdit> stream = 
+                select(cxn, queryStr, nextQueryId())
+                        .map(transforms.history)
+                        .filter(Optional::isPresent)
+                        .map(Optional::get);
         return CloseableIterator.of(stream);
 
 //        final IStriterator sitr = new Striterator(new WrappedResult<BindingSet>(
@@ -1390,33 +1552,6 @@ public abstract class BlazeGraph implements Graph {
 //        return (ICloseableIterator<BlazeGraphEdit>) sitr;
             
     }
-    
-    private Function<BindingSet,BlazeGraphEdit> historyTransform = bs -> {
-        final URI s = (URI) bs.getValue("s");
-        final URI p = (URI) bs.getValue("p");
-        final Value o = bs.getValue("o");
-        final URI a = (URI) bs.getValue("action");
-        final Literal t = (Literal) bs.getValue("time");
-        
-        if (!t.getDatatype().equals(XSD.DATETIME)) {
-            throw new RuntimeException("Unexpected timestamp in result: " + bs);
-        }
-        
-        final BlazeGraphEdit.Action action;
-        if (a.equals(RDRHistory.Vocab.ADDED)) {
-            action = Action.Add;
-        } else if (a.equals(RDRHistory.Vocab.REMOVED)) {
-            action = Action.Remove;
-        } else {
-            throw new RuntimeException("Unexpected action in result: " + bs);
-        }
-        
-        final BlazeGraphAtom atom = toGraphAtom(s, p, o).get();
-        
-        final long timestamp = DateTimeExtension.getTimestamp(t.getLabel());
-        
-        return new BlazeGraphEdit(action, atom, timestamp);
-    };
     
 //    public class WrappedResult<E> implements CloseableIterator<E> {
 //        

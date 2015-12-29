@@ -18,18 +18,17 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
 import com.bigdata.journal.BufferMode;
 import com.bigdata.journal.Journal;
 import com.bigdata.rdf.axioms.NoAxioms;
-import com.bigdata.rdf.internal.CompressedTimestampExtensionFactory;
 import com.bigdata.rdf.sail.BigdataSail;
 import com.bigdata.rdf.sail.BigdataSailRepository;
 import com.bigdata.rdf.store.AbstractTripleStore;
-import com.bigdata.rdf.vocab.core.BigdataCoreVocabulary_v20151106;
+import com.bigdata.rdf.vocab.core.BigdataCoreVocabulary_v20151210;
 import com.blazegraph.gremlin.util.Code;
 
-public class LocalBlazeGraphProvider extends AbstractGraphProvider {
+public class EmbeddedBlazeGraphProvider extends AbstractGraphProvider {
 
     public static interface Options {
         
-        String REPOSITORY_NAME = LocalBlazeGraphProvider.class.getName() + ".repositoryName";
+        String REPOSITORY_NAME = EmbeddedBlazeGraphProvider.class.getName() + ".repositoryName";
         
     }
     
@@ -50,7 +49,6 @@ public class LocalBlazeGraphProvider extends AbstractGraphProvider {
 
     public static final Set<Class> IMPLEMENTATIONS = new HashSet<Class>() {{
         add(BlazeEdge.class);
-        add(AbstractBlazeElement.class);
         add(BlazeGraph.class);
         add(BlazeProperty.class);
         add(BlazeVertex.class);
@@ -110,7 +108,7 @@ public class LocalBlazeGraphProvider extends AbstractGraphProvider {
     }
 
     private static String journal() {
-        final File file = Code.wrapThrow(() -> File.createTempFile("LocalBlazeGraphProvider", ".jnl"));
+        final File file = Code.wrapThrow(() -> File.createTempFile("EmbeddedBlazeGraphProvider", ".jnl"));
         file.deleteOnExit();
         return file.getAbsolutePath();
     }
@@ -160,7 +158,7 @@ public class LocalBlazeGraphProvider extends AbstractGraphProvider {
 //        props.setProperty(BigdataGraph.Options.READ_FROM_WRITE_CONNECTION, "true");
 
         // vocabulary and extensions
-        props.setProperty(AbstractTripleStore.Options.VOCABULARY_CLASS, BigdataCoreVocabulary_v20151106.class.getName());
+        props.setProperty(AbstractTripleStore.Options.VOCABULARY_CLASS, BigdataCoreVocabulary_v20151210.class.getName());
 //        props.setProperty(AbstractTripleStore.Options.EXTENSION_FACTORY_CLASS, CompressedTimestampExtensionFactory.class.getName());
         
         /*

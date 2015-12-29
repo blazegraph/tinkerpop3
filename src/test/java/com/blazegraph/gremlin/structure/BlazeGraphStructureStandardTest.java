@@ -6,5 +6,5 @@ import org.junit.runner.RunWith;
 import junit.framework.TestCase;
 
 @RunWith(StructureModifiedSuite.class)
-@GraphProviderClass(provider = LocalBlazeGraphProvider.class, graph = BlazeGraph.class)
+@GraphProviderClass(provider = EmbeddedBlazeGraphProvider.class, graph = BlazeGraph.class)
 public class BlazeGraphStructureStandardTest extends TestCase {}

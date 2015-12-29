@@ -114,7 +114,7 @@ public class BlazeEdge extends AbstractBlazeElement implements Edge, BlazeReifie
             default:
                 stream = Stream.of(from, to); break;
         }
-        return CloseableIterators.of(stream.map(Vertex.class::cast));
+        return CloseableIterator.of(stream.map(Vertex.class::cast));
     }
     
 //    private final Callable<Vertices> verticesCompute = () -> {

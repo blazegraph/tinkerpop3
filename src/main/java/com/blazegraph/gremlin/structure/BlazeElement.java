@@ -36,7 +36,8 @@ public interface BlazeElement extends Element {
      */
     @Override
     public default <V> CloseableIterator<V> values(final String... keys) {
-        return CloseableIterators.of(this.<V>properties(keys), Property::value);
+//        return CloseableIterators.of(this.<V>properties(keys), Property::value);
+        return CloseableIterator.of(this.<V>properties(keys).stream().map(Property::value));
     }
 
     @Override

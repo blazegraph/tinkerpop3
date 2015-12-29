@@ -23,7 +23,6 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 package com.blazegraph.gremlin.structure;
 
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -31,12 +30,8 @@ public class BlazeBindingSet implements Iterable<Map.Entry<String,Object>> {
         
     private final Map<String, Object> vals;
     
-    public BlazeBindingSet() {
-        this.vals = new LinkedHashMap<String, Object>();
-    }
-    
-    public void put(final String key, final Object val) {
-        this.vals.put(key, val);
+    public BlazeBindingSet(final Map<String, Object> vals) {
+        this.vals = vals;
     }
     
     public Object get(final String key) {
@@ -62,7 +57,7 @@ public class BlazeBindingSet implements Iterable<Map.Entry<String,Object>> {
 
     @Override
     public String toString() {
-        return "BigdataBindings [vals=" + vals + "]";
+        return "BlazeBindingSet [vals=" + vals + "]";
     }
     
 }
