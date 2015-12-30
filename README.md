@@ -71,9 +71,9 @@ Cardinality.set and Cardinality.single are modeled the same way:
 Cardinality.list is modeled differently:
 	
 	# VertexProperty list = john.property(Cardinality.list, "city", "salt lake city", "acl", "public");
-	blaze:john blaze:city 0^^vocab:packedLong .
-	<<blaze:john blaze:city 0^^vocab:packedLong>> rdf:value "salt lake city" .
-	<<blaze:john blaze:city 0^^vocab:packedLong>> blaze:acl "public" .
+	blaze:john blaze:city "12765"^^internal:packedLong .
+	<<blaze:john blaze:city "12765"^^internal:packedLong>> rdf:value "salt lake city" .
+	<<blaze:john blaze:city "12765"^^internal:packedLong>> blaze:acl "public" .
 	
 Cardinality.list uses a specially datatyped and monotonically increasing internal identifier to represent the vertex property (the actual datatype is http://www.bigdata.com/rdf/datatype#packedLong).  This identifier serves to manage duplicate list values and ordering of list items.  It's important to note this difference as different cardinalities will require different SPARQL queries.
 
