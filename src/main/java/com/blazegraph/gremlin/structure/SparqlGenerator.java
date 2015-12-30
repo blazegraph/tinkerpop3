@@ -88,11 +88,13 @@ public class SparqlGenerator {
                 "        bind(<<?s ?p ?o>> as ?vp) .\n" +
                 "        filter(isLiteral(?o)) .\n" +
                 "        filter(datatype(?o) != <LI>) .\n" +
+//                "        filter(!sameTerm(datatype(?o), <LI>)) .\n" +
                 "        filter(?p != <LABEL>) .\n" +
                 "    } union {\n" +
                 "        bind(<<?s ?p ?order>> as ?vp) .\n" +
                 "        filter(isLiteral(?order)) .\n" +
                 "        filter(datatype(?order) = <LI>) .\n" +
+//                "        filter(sameTerm(datatype(?order), <LI>)) .\n" +
                 "        ?vp <VALUE> ?o .\n" +
                 "    }\n" +
                 "} order by ?order";
@@ -256,29 +258,34 @@ public class SparqlGenerator {
         return queryStr;
     }
     
-    public String properties(final BlazeElement element, final List<URI> uris) {
+    public String properties(final BlazeReifiedElement element, final List<URI> uris) {
         final StringBuilder vc = new StringBuilder();
         if (!uris.isEmpty()) {
             buildValuesClause(vc, "?p", uris);
         }
         final StringBuilder s = new StringBuilder();
-        final Resource resource = element.rdfId();
-        if (resource instanceof URI) {
-            s.append(sparql(resource));
-        } else {
-            final BigdataBNode sid = (BigdataBNode) resource;
-            final BigdataStatement stmt = sid.getStatement();
-            s.append("<<")
-                .append(sparql(stmt.getSubject())).append(' ')
-                .append(sparql(stmt.getPredicate())).append(' ')
-                .append(sparql(stmt.getObject()))
-                .append(">>");
-        }
-        final String template = element instanceof BlazeVertex ?
-                VERTEX_PROPERTIES : PROPERTIES;
+        final BigdataBNode sid = element.rdfId();
+        final BigdataStatement stmt = sid.getStatement();
+        s.append("<<")
+            .append(sparql(stmt.getSubject())).append(' ')
+            .append(sparql(stmt.getPredicate())).append(' ')
+            .append(sparql(stmt.getObject()))
+            .append(">>");
         final String queryStr = 
-                template.replace("?s", s.toString())
-                        .replace(Templates.VALUES, vc.toString());
+                PROPERTIES.replace("?s", s.toString())
+                          .replace(Templates.VALUES, vc.toString());
+        return queryStr;
+    }
+    
+    public String vertexProperties(final BlazeVertex vertex, final List<URI> uris) {
+        final StringBuilder vc = new StringBuilder();
+        if (!uris.isEmpty()) {
+            buildValuesClause(vc, "?p", uris);
+        }
+        final URI uri = vertex.rdfId();
+        final String queryStr = 
+                VERTEX_PROPERTIES.replace("?s", sparql(uri))
+                                 .replace(Templates.VALUES, vc.toString());
         return queryStr;
     }
     
@@ -331,14 +338,14 @@ public class SparqlGenerator {
         sb.append(") {");
         vals.stream().forEach(val -> {
             sb.append("\n        (");
-            sb.append(val.stream().map(this::sparql).collect(joining(" ")));
+            sb.append(val.stream().map(SparqlGenerator::sparql).collect(joining(" ")));
             sb.append(")");
         });
         sb.append("\n    }\n");
         return sb;
     }
 
-    public final String sparql(final Value val) {
+    public static final String sparql(final Value val) {
         if (val instanceof Literal) {
             return val.toString();
         } else if (val instanceof URI) {

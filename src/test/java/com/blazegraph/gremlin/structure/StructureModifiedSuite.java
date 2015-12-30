@@ -23,6 +23,10 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 package com.blazegraph.gremlin.structure;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
+import java.util.List;
+import java.util.Map;
 
 import org.apache.tinkerpop.gremlin.AbstractGremlinSuite;
 import org.apache.tinkerpop.gremlin.AbstractGremlinTest;
@@ -37,6 +41,7 @@ import org.apache.tinkerpop.gremlin.structure.FeatureSupportTest;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.GraphConstructionTest;
 import org.apache.tinkerpop.gremlin.structure.GraphTest;
+import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.PropertyTest;
 import org.apache.tinkerpop.gremlin.structure.SerializationTest;
 import org.apache.tinkerpop.gremlin.structure.TransactionTest;
@@ -61,6 +66,7 @@ import org.apache.tinkerpop.gremlin.structure.util.reference.ReferenceGraphTest;
 import org.apache.tinkerpop.gremlin.structure.util.reference.ReferenceVertexPropertyTest;
 import org.apache.tinkerpop.gremlin.structure.util.reference.ReferenceVertexTest;
 import org.apache.tinkerpop.gremlin.structure.util.star.StarGraphTest;
+import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 import org.junit.Test;
 import org.junit.experimental.runners.Enclosed;
 import org.junit.runner.RunWith;

@@ -95,10 +95,12 @@ public class EmbeddedBlazeGraphProvider extends AbstractGraphProvider {
             final String graphName, final Class<?> test, final String testMethodName,
             final GraphData loadGraphWith) {
         return new HashMap<String, Object>() {{
-            put(Options.REPOSITORY_NAME, graphName+"-"+test.getName()+"-"+testMethodName);
+            final String name = graphName+"-"+test.getName()+"-"+testMethodName;
+            put(Options.REPOSITORY_NAME, name);
 //            put(LocalBlazeGraph.Options.REPOSITORY, getRepository(graphName+"-"+test.getName()+"-"+testMethodName));
             put(BlazeGraph.Options.READ_FROM_WRITE_CXN, true);
-            put(Graph.GRAPH, BlazeGraphEmbedded.class.getName());
+//            put(BlazeGraphEmbedded.Options.REPOSITORY, getRepository(name));
+            put(Graph.GRAPH, EmbeddedBlazeGraphProvider.class.getName());
         }};
     }
     
@@ -110,11 +112,11 @@ public class EmbeddedBlazeGraphProvider extends AbstractGraphProvider {
         }
     }
     
-//    public static LocalBlazeGraph open(final Configuration config) {
-//        final String name = config.getString(Options.REPOSITORY_NAME);
-//        config.addProperty(LocalBlazeGraph.Options.REPOSITORY, getRepository(name));
-//        return new LocalBlazeGraph(config);
-//    }
+    public static BlazeGraphEmbedded open(final Configuration config) {
+        final String name = config.getString(Options.REPOSITORY_NAME);
+        config.addProperty(BlazeGraphEmbedded.Options.REPOSITORY, getRepository(name));
+        return BlazeGraphEmbedded.open(config);
+    }
     
     /**
      * Used by TestBlazeGraph
@@ -214,6 +216,11 @@ public class EmbeddedBlazeGraphProvider extends AbstractGraphProvider {
          */
         props.setProperty(AbstractTripleStore.Options.INLINE_URI_FACTORY_CLASS,
                 CustomInlineURIFactory.class.getName());
+        
+        /*
+         * Turn on history by default.
+         */
+        props.setProperty(AbstractTripleStore.Options.RDR_HISTORY_CLASS, RDRHistory.class.getName());
 
         return props;
         

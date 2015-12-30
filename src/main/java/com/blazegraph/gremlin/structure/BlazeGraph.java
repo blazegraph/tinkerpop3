@@ -533,7 +533,7 @@ public abstract class BlazeGraph implements Graph {
             final BlazeVertex vertex, final String... keys) {
         final List<URI> uris = 
                 Stream.of(keys).map(vf::propertyURI).collect(toList());
-        final String queryStr = sparql.properties(vertex, uris);
+        final String queryStr = sparql.vertexProperties(vertex, uris);
         
         final RepositoryConnection cxn = openRead();
         return Code.wrapThrow(() -> {
@@ -626,6 +626,7 @@ public abstract class BlazeGraph implements Graph {
         vertexProperty(final BlazeVertex v) {
             return bs -> {
 
+                log.debug(() -> bs);
                 final URI p = (URI) bs.getValue("p");
                 final Literal o = (Literal) bs.getValue("o");
                 final BigdataBNode sid = (BigdataBNode) bs.getValue("vp");
@@ -645,6 +646,7 @@ public abstract class BlazeGraph implements Graph {
         protected final 
         Function<BindingSet,BlazeBindingSet> bindingSet = bs -> {
             
+            log.debug(() -> bs);
             final Map<String, Object> map = bs.getBindingNames().stream()
                 .map(key -> new SimpleEntry<String,Object>(key, bs.getBinding(key).getValue()))
                 .map(e -> {

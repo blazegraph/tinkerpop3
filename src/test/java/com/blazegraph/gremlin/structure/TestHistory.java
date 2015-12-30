@@ -44,9 +44,10 @@ public class TestHistory extends TestCase {
     
     @Override
     public void setUp() throws Exception {
-        this.graph = EmbeddedBlazeGraphProvider.open(new HashMap<String,String>() {{
-            put(AbstractTripleStore.Options.RDR_HISTORY_CLASS, RDRHistory.class.getName());
-        }});
+//        this.graph = EmbeddedBlazeGraphProvider.open(new HashMap<String,String>() {{
+//            put(AbstractTripleStore.Options.RDR_HISTORY_CLASS, RDRHistory.class.getName());
+//        }});
+        this.graph = EmbeddedBlazeGraphProvider.open();
     }
     
     @Override
