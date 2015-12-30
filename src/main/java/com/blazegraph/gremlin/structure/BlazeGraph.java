@@ -253,7 +253,7 @@ public abstract class BlazeGraph implements Graph {
         final Optional<Object> suppliedId = validateSuppliedId(kvs);
         
         final String id = suppliedId.map(String.class::cast)
-                                    .orElse(UUID.randomUUID().toString());
+                                    .orElse(nextId());
         final String label = ElementHelper.getLabelValue(kvs)
                                           .orElse(Vertex.DEFAULT_LABEL);
         ElementHelper.validateLabel(label);
@@ -288,7 +288,7 @@ public abstract class BlazeGraph implements Graph {
         final Optional<Object> suppliedId = validateSuppliedId(kvs);
         
         final String id = suppliedId.map(String.class::cast)
-                                    .orElse(UUID.randomUUID().toString());
+                                    .orElse(nextId());
 
         if (!bulkLoad) {
             final Optional<BlazeEdge> existing = edge(id);
@@ -318,6 +318,11 @@ public abstract class BlazeGraph implements Graph {
         final BlazeEdge edge = new BlazeEdge(this, edgeStmt, rdfLabel, from, to);
         ElementHelper.attachProperties(edge, kvs);
         return edge;
+    }
+    
+    private final String nextId() {
+        final String id = UUID.randomUUID().toString();
+        return id;//.substring(id.length()-5);
     }
     
     <V> BlazeProperty<V> property(final BlazeReifiedElement element, 

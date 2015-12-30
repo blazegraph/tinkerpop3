@@ -23,10 +23,6 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 package com.blazegraph.gremlin.structure;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
-import java.util.List;
-import java.util.Map;
 
 import org.apache.tinkerpop.gremlin.AbstractGremlinSuite;
 import org.apache.tinkerpop.gremlin.AbstractGremlinTest;
@@ -41,7 +37,6 @@ import org.apache.tinkerpop.gremlin.structure.FeatureSupportTest;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.GraphConstructionTest;
 import org.apache.tinkerpop.gremlin.structure.GraphTest;
-import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.PropertyTest;
 import org.apache.tinkerpop.gremlin.structure.SerializationTest;
 import org.apache.tinkerpop.gremlin.structure.TransactionTest;
@@ -66,7 +61,6 @@ import org.apache.tinkerpop.gremlin.structure.util.reference.ReferenceGraphTest;
 import org.apache.tinkerpop.gremlin.structure.util.reference.ReferenceVertexPropertyTest;
 import org.apache.tinkerpop.gremlin.structure.util.reference.ReferenceVertexTest;
 import org.apache.tinkerpop.gremlin.structure.util.star.StarGraphTest;
-import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 import org.junit.Test;
 import org.junit.experimental.runners.Enclosed;
 import org.junit.runner.RunWith;
@@ -117,33 +111,36 @@ public class StructureModifiedSuite extends AbstractGremlinSuite {
         super(klass, builder, allTests, null, false, TraversalEngine.Type.STANDARD);
     }
     
-    public static class ModifiedGraphTest extends GraphTest {
-
-//        /*
-//         * Works but takes too long
-//         */
-//        @Override
-//        public void shouldTestTreeConnectivity() {
-////            super.shouldTestTreeConnectivity();
+//    public static class DataTest extends AbstractGremlinTest {
+//
+//        @Test
+//        @LoadGraphWith(LoadGraphWith.GraphData.CREW)
+//        public void testData() {
+//            
+////          System.err.println(bg.dumpStore());
+//            try {
+//                final BlazeGraphEmbedded bg = (BlazeGraphEmbedded) graph;
+//                final RepositoryResult<Statement> stmts =
+//                        bg.getRepository().getUnisolatedConnection().getStatements(null, null, null, false);
+//                while (stmts.hasNext()) {
+//                    final BigdataStatement stmt = (BigdataStatement) stmts.next();
+//                    String s = stmt.toString();
+//                    s = s.replace("> : Explicit", " .");
+//                    s = s.replace(",", "");
+//                    s = s.substring(1);
+//                    s = s.replace(RDFS.LABEL.stringValue(), "rdfs:label");
+//                    s = s.replace(RDF.VALUE.stringValue(), "rdf:value");
+//                    s = s.replace(PackedLongIV.PACKED_LONG.stringValue(), "vocab:packedLong");
+//                    s = s.replace(XSD.INT.stringValue(), "xsd:int");
+//                    System.err.println(s);
+//                }
+//                stmts.close();    
+//            } catch (Exception e) {
+//            }
+//            
 //        }
 //        
-//        /*
-//         * Works but takes too long
-//         */
-//        @Override
-//        public void shouldRemoveVertices() {
-////            super.shouldRemoveVertices();
-//        }
-//        
-//        /*
-//         * Works but takes too long
-//         */
-//        @Override
-//        public void shouldRemoveEdges() {
-////            super.shouldRemoveEdges();
-//        }
-        
-    }
+//    }
     
     public static class ModifiedDetachedGraphTest extends DetachedGraphTest {
 
