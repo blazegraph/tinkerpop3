@@ -79,7 +79,7 @@ Cardinality.list uses a specially datatyped and monotonically increasing interna
 
 #### Putting it all together: The Crew
 
-Here is how the Tinkerpop3 "Crew" dataset looks when loaded into Blazegraph.  (Human-friendly IDs have been assigned for vertices and edge UUIDs have been abbreviated to 5 characters for brevity):
+Here is how the Tinkerpop3 "Crew" dataset looks when loaded into Blazegraph.  Human-friendly IDs have been assigned to vertices and edge UUIDs have been abbreviated to 5 characters for brevity.
 
     blaze:tinkergraph rdfs:label "software" ;
                       blaze:name "tinkergraph" .
