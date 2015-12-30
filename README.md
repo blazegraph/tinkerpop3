@@ -6,8 +6,8 @@ The concept behind blazegraph-gremlin is that property graph (PG) data can be lo
 
 Some interesting features of the Blazegraph/TP3 implementation include:
 
-* Listener API - you can subscribe to notifications about updates to the graph (adds and removes of vertices, edges, and properties), commits, rollbacks, etc.
-* History API - you can set your graph up such that it captures full or partial history of graph edits.
+* Listener API - subscribe to notifications about updates to the graph (adds and removes of vertices/edges/properties, commits, rollbacks, etc.)
+* History API - capture full or partial history of edits to the graph.
 * Built-in full text index and search API to find graph elements.
 * Automatic SPARQL to PG translation - run a SPARQL query and get your results back in property graph form.
 * Bulk Load API for fast setup of new graphs.
