@@ -49,7 +49,7 @@ Property graph elements are represented as follows in Blazegraph:
 	# BlazeVertex john = graph.addVertex(T.id, "john", T.label, "person");
 	blaze:john rdfs:label "person" .
 	
-	# BlazeEdge (id=k01, label="knows", from=john, to=mary)
+	# BlazeEdge knows = graph.addEdge(john, mary, "knows", T.id, "k01");
 	blaze:john blaze:k01 blaze:mary .
 	<<blaze:john blaze:k01 blaze:mary>> rdfs:label "knows" .
 	
@@ -57,21 +57,25 @@ Vertices requires one statement, edges require two.
 
 Edge properties are simply attached to the reified edge statement:
 
-	# Property (edge=k01, key="acl", value="private")
+	# BlazeProperty p = knows.property("acl", "private");
 	<<blaze:john blaze:k01 blaze:mary>> blaze:acl "private" .
 
 Representation of vertex properties depends on the cardinality of the key.  Cardinality.single and .set look the same, .list is represented differently.  Vertices can mix and match cardinalities for different keys.  All three cardinalities are supported, but Cardinality.set is the one most closely aligned with RDF and as such will provide the best performance of the three.  User supplied ids are NOT supported for vertex properties.
 
-	# VertexProperty (vertex=john, cardinality=single/set, key="age", value=25, "acl"="public")
+Cardinality.set and Cardinality.single are modeled the same way:
+	
+	# VertexProperty set = john.property(Cardinality.set, "age", 25, "acl", "public");
 	blaze:john blaze:age "25"^^xsd:int .
 	<<blaze:john blaze:age "25"^^xsd:int>> blaze:acl "public" .
 	
-	# VertexProperty (vertex=john, cardinality=list, key="city", value="salt lake city", "acl"="public")
+Cardinality.list is modeled differently:
+	
+	# VertexProperty list = john.property(Cardinality.list, "city", "salt lake city", "acl", "public");
 	blaze:john blaze:city 0^^vocab:packedLong .
 	<<blaze:john blaze:city 0^^vocab:packedLong>> rdf:value "salt lake city" .
 	<<blaze:john blaze:city 0^^vocab:packedLong>> blaze:acl "public" .
 	
-As you can see, Cardinality.list uses a specially datatyped and monotonically increasing internal identifier to represent the vertex property (the actual datatype is http://www.bigdata.com/rdf/datatype#packedLong).  This identifier serves to manage duplicate list values and ordering of list items.  It's important to note this difference as different cardinalities will require different SPARQL queries.
+Cardinality.list uses a specially datatyped and monotonically increasing internal identifier to represent the vertex property (the actual datatype is http://www.bigdata.com/rdf/datatype#packedLong).  This identifier serves to manage duplicate list values and ordering of list items.  It's important to note this difference as different cardinalities will require different SPARQL queries.
 
 #### Putting it all together: The Crew
 
