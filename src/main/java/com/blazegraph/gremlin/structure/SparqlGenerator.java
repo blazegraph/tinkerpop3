@@ -25,6 +25,7 @@ package com.blazegraph.gremlin.structure;
 import static java.util.Arrays.asList;
 import static java.util.stream.Collectors.joining;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Function;
@@ -35,12 +36,11 @@ import org.openrdf.model.Resource;
 import org.openrdf.model.URI;
 import org.openrdf.model.Value;
 
-import com.bigdata.rdf.internal.impl.extensions.CompressedTimestampExtension;
-import com.bigdata.rdf.internal.impl.literal.PackedLongIV;
 import com.bigdata.rdf.model.BigdataBNode;
 import com.bigdata.rdf.model.BigdataStatement;
-import com.bigdata.rdf.sail.RDRHistory;
 import com.bigdata.rdf.sparql.ast.QueryHints;
+import com.bigdata.rdf.store.BDS;
+import com.blazegraph.gremlin.structure.BlazeGraph.Match;
 
 public class SparqlGenerator {
 
@@ -49,74 +49,83 @@ public class SparqlGenerator {
         String VALUES = UUID.randomUUID().toString() + "\n";
         
         String VERTICES =
-                "select ?id ?label where {\n" +
+                "select ?vertex ?label where {\n" +
                      VALUES +
-                "    ?id <LABEL> ?label . filter(isURI(?id)) .\n" +
+                "    ?vertex <LABEL> ?label .\n" +
+                "    filter(isURI(?vertex)) .\n" +
                 "}";
         
         String VERTEX_COUNT =
-                "select (count(?id) as ?count) where {\n" +
-                "    ?id <LABEL> ?label . filter(isURI(?id)) .\n" +
+                "select (count(?vertex) as ?count) where {\n" +
+                "    ?vertex <LABEL> ?label . filter(isURI(?vertex)) .\n" +
                 "}";
         
         String EDGES =
-                "select ?sid ?label ?fromLabel ?toLabel where {\n" +
+                "select ?edge ?label ?fromLabel ?toLabel where {\n" +
                      VALUES +
-                "    bind(<<?from ?id ?to>> as ?sid) .\n" +
-                "    ?sid <LABEL> ?label . filter(!isURI(?sid)) .\n" +
-                "    ?from <LABEL> ?fromLabel .\n" +
-                "    ?to <LABEL> ?toLabel .\n" +
+                "    bind(<<?from ?eid ?to>> as ?edge) .\n" +
+                "    filter(isURI(?from) && isURI(?to)) .\n" +
+                "    optional {\n" +
+                "        ?edge <LABEL> ?label .\n" +
+                "        ?from <LABEL> ?fromLabel .\n" +
+                "        ?to <LABEL> ?toLabel .\n" +
+                "    }" +
                 "}";
 
         String EDGE_COUNT =
-                "select (count(?sid) as ?count) where {\n" +
-                "    ?sid <LABEL> ?label . filter(!isURI(?sid)) .\n" +
+                "select (count(?edge) as ?count) where {\n" +
+                "    ?edge <LABEL> ?label . filter(!isURI(?edge)) .\n" +
                 "}";
         
         String PROPERTIES =
-                "select ?p ?o where {\n" +
+                "select ?key ?val where {\n" +
                      VALUES + 
-                "    ?s ?p ?o .\n" +
-                "    filter(isLiteral(?o)) .\n" +
-                "    filter(?p not in(<LABEL>,<VALUE>,<ADDED>,<REMOVED>)) .\n" +
+                "    ?s ?key ?val .\n" +
+                "    filter(isLiteral(?val)) .\n" +
+                "    filter(?key not in(<LABEL>,<VALUE>,<ADDED>,<REMOVED>)) .\n" +
                 "}";
         
         String VERTEX_PROPERTIES =
-                "select ?vp ?p ?o where {\n" +
+                "select ?vp ?val where {\n" +
                      VALUES + 
                 "    {\n" +
-                "        bind(<<?s ?p ?o>> as ?vp) .\n" +
-                "        filter(isLiteral(?o)) .\n" +
-                "        filter(datatype(?o) != <LI>) .\n" +
-//                "        filter(!sameTerm(datatype(?o), <LI>)) .\n" +
-                "        filter(?p != <LABEL>) .\n" +
+                "        bind(<<?s ?key ?val>> as ?vp) .\n" +
+                "        filter(isLiteral(?val)) .\n" +
+                "        filter(datatype(?val) != <LI>) .\n" +
+                "        filter(?key != <LABEL>) .\n" +
                 "    } union {\n" +
-                "        bind(<<?s ?p ?order>> as ?vp) .\n" +
+                "        bind(<<?s ?key ?order>> as ?vp) .\n" +
                 "        filter(isLiteral(?order)) .\n" +
                 "        filter(datatype(?order) = <LI>) .\n" +
-//                "        filter(sameTerm(datatype(?order), <LI>)) .\n" +
-                "        ?vp <VALUE> ?o .\n" +
+                "        ?vp <VALUE> ?val .\n" +
                 "    }\n" +
                 "} order by ?order";
         
         String DIRECTION = UUID.randomUUID().toString() + "\n";
         
         String EDGES_FROM_VERTEX =
-                "select ?sid ?label ?fromLabel ?toLabel where {\n" +
+                "select ?edge ?label ?fromLabel ?toLabel where {\n" +
                      VALUES + 
                      DIRECTION +
-                "    ?sid <LABEL> ?label . filter(!isURI(?sid)) .\n" +
+                "    ?edge <LABEL> ?label .\n" +
+                "    filter(!isURI(?edge)) .\n" +
                 "}";
         
         String FORWARD =
-                "    bind(<<?src ?id ?to>> as ?sid) .\n" +
-                "    ?src <LABEL> ?fromLabel .\n" +
-                "    ?to <LABEL> ?toLabel .\n";
+                "    bind(<<?src ?id ?to>> as ?edge) .\n" +
+                "    filter(isURI(?src) && isURI(?to)) .\n" +
+                "    optional {\n" +
+                "        ?src <LABEL> ?fromLabel .\n" +
+                "        ?to <LABEL> ?toLabel .\n" +
+                "    }\n";
         
         String REVERSE =
-                "    bind(<<?from ?id ?src>> as ?sid) .\n" +
-                "    ?src <LABEL> ?toLabel .\n" +
-                "    ?from <LABEL> ?fromLabel .\n";
+                "    bind(<<?from ?id ?src>> as ?edge) .\n" +
+                "    filter(isURI(?src) && isURI(?from)) .\n" +
+                "    optional {\n" +
+                "        ?src <LABEL> ?toLabel .\n" +
+                "        ?from <LABEL> ?fromLabel .\n" +
+                "    }\n";
         
         String BOTH =
                 "    {\n"+
@@ -136,18 +145,36 @@ public class SparqlGenerator {
                 "    ?sid ?pp ?oo .\n" +
                 "} where {\n" +
                 "    {\n" +
-                         // remove any non-li vps with different value
+                         /*
+                          * Remove any card.set/single vps with different value.
+                          */
                 "        bind(<< <VERTEX> <KEY> ?val >> as ?sid) .\n" +
+                "        filter(isLiteral(?val)) .\n" +
                 "        filter(datatype(?val) != <LI>) .\n" +
                 "        filter(?val != VAL) .\n" +
                 "        optional {\n" +
+                            /*
+                             * Look for vpps, optional because there might not
+                             * be any. Skip history statements.
+                             */
                 "           ?sid ?pp ?oo .\n" +
+                "           filter(?pp not in(<ADDED>,<REMOVED>)) .\n" +
                 "        }\n" +
                 "    } union {\n" +
-                         // remove all li vps regardless of rdf:value
-                "        bind(<< <VERTEX> <KEY> ?li >> as ?sid) .\n" +
-                "        filter(datatype(?li) = <LI>) .\n" +
+                         /*
+                          * Remove all card.list vps regardless of rdf:value,
+                          * since this is only used with card.single.
+                          */
+                "        bind(<< <VERTEX> <KEY> ?order >> as ?sid) .\n" +
+                "        filter(isLiteral(?order)) .\n" +
+                "        filter(datatype(?order) = <LI>) .\n" +
+                         /*
+                          * This part does not need to be optional, since
+                          * there will always be an rdfs:value statement.
+                          * Skip history statements.
+                          */
                 "        ?sid ?pp ?oo .\n" +
+                "        filter(?pp not in(<ADDED>,<REMOVED>)) .\n" +
                 "    }\n" +
                 "}";
         
@@ -177,6 +204,93 @@ public class SparqlGenerator {
                 "    hint:Query hint:history true .\n" +
                 "} order by ?time ?action";
 
+        String REMOVE_VERTEX =
+                "delete {\n" +
+                "    ?id ?p ?o .\n" +
+                "    ?s ?p ?id .\n" +
+                "    ?sid ?pp ?oo .\n" +
+                "} where {\n" +
+                     VALUES +
+                "    {\n" +
+                "        bind(<< ?id ?p ?o >> as ?sid) .\n" +
+                "        optional {\n" +
+                "            ?sid ?pp ?oo .\n" +
+                "            filter(?pp not in(<ADDED>,<REMOVED>)) .\n" +
+                "        }\n" +
+                "    } union {\n" +
+                "        bind(<< ?s ?p ?id >> as ?sid) .\n" +
+                "        optional {\n" +
+                "            ?sid ?pp ?oo .\n" +
+                "            filter(?pp not in(<ADDED>,<REMOVED>)) .\n" +
+                "        }\n" +
+                "    }\n" +
+                "}";
+        
+        
+        String REMOVE_REIFIED_ELEMENT =
+                "delete {\n" +
+                "    ?s ?p ?o .\n" +
+                "    ?sid ?pp ?oo .\n" +
+                "} where {\n" +
+                     VALUES +
+                "    bind(<< ?s ?p ?o >> as ?sid) .\n" +
+                "    optional {\n" +
+                "        ?sid ?pp ?oo .\n" +
+                "        filter(?pp not in(<ADDED>,<REMOVED>)) .\n" +
+                "    }\n" +
+                "}";
+        
+        String TEXT_SEARCH =
+                "select ?vertex ?edge ?label ?fromLabel ?toLabel ?vp ?vpVal ?key ?val \n" +
+                "where {\n" +
+                "    ?val <"+BDS.SEARCH+"> ?search .\n" +
+                "    ?val <"+BDS.MATCH_ALL_TERMS+"> ?matchAll .\n" +
+                "    ?val <"+BDS.MATCH_EXACT+"> ?matchExact .\n" +
+                "    {\n" +
+                         /*
+                          * Edge property
+                          */
+                "        bind(<<?from ?eid ?to>> as ?edge) .\n" +
+                "        filter(isURI(?from) && isURI(?to)) .\n" +
+                "        ?edge ?key ?val .\n" +
+                "        filter(?key not in (<LABEL>,<VALUE>,<ADDED>,<REMOVED>)) .\n" +
+                "        optional {\n" +
+                "            ?edge <LABEL> ?label .\n" +
+                "            ?from <LABEL> ?fromLabel .\n" +
+                "            ?to <LABEL> ?toLabel .\n" +
+                "        }" +
+                "    } union {\n" +
+                         /*
+                          * VertexProperty property
+                          */
+                "        bind(<<?vertex ?vpKey ?vpVal>> as ?vp) .\n" +
+                "        filter(isURI(?vertex)) .\n" +
+                "        filter(isLiteral(?vpVal)) .\n" +
+                "        filter(!isURI(?vp)) .\n" +
+                "        ?vp ?key ?val .\n" +
+                "        filter(?key not in (<LABEL>,<VALUE>,<ADDED>,<REMOVED>)) .\n" +
+                "        optional { ?vertex <LABEL> ?label . }\n" +
+                "    } union {\n" +
+                         /*
+                          * Vertex property (Cardinality.set/single)
+                          */
+                "        bind(<<?vertex ?vpKey ?val>> as ?vp) .\n" +
+                "        filter(isURI(?vertex)) .\n" +
+                "        filter(?vpKey not in (<LABEL>,<VALUE>,<ADDED>,<REMOVED>)) .\n" +
+                "        optional { ?vertex <LABEL> ?label . }\n" +
+                "    } union {\n" +
+                         /*
+                          * Vertex property (Cardinality.list)
+                          */
+                "        bind(<<?vertex ?vpKey ?order>> as ?vp) .\n" +
+                "        filter(isURI(?vertex)) .\n" +
+                "        filter(isLiteral(?order)) .\n" +
+                "        filter(datatype(?order) = <LI>) .\n" +
+                "        filter(?vpKey not in (<LABEL>,<VALUE>,<ADDED>,<REMOVED>)) .\n" +
+                "        ?vp <VALUE> ?val.\n" +
+                "        optional { ?vertex <LABEL> ?label . }\n" +
+                "    }\n" +
+                "}";
          
     }
 
@@ -204,6 +318,13 @@ public class SparqlGenerator {
     
     private final String HISTORY;
     
+    private final String REMOVE_VERTEX;
+
+    private final String REMOVE_REIFIED_ELEMENT;
+    
+    private final String TEXT_SEARCH;
+
+    
     public SparqlGenerator(final BlazeValueFactory vf) {
         final String label = vf.label().stringValue();
         final String value = vf.value().stringValue();
@@ -230,10 +351,18 @@ public class SparqlGenerator {
         this.BOTH = f.apply(Templates.BOTH);
         this.CLEAN_VERTEX_PROPS = f.apply(Templates.CLEAN_VERTEX_PROPS);
         this.HISTORY = f.apply(Templates.HISTORY);
+        this.REMOVE_VERTEX = f.apply(Templates.REMOVE_VERTEX);
+        this.REMOVE_REIFIED_ELEMENT = f.apply(Templates.REMOVE_REIFIED_ELEMENT);
+        this.TEXT_SEARCH = f.apply(Templates.TEXT_SEARCH);
     }
     
     public String vertices(final List<URI> uris) {
-        return elements(VERTICES, uris);
+        final StringBuilder sb = new StringBuilder();
+        if (!uris.isEmpty()) {
+            buildValuesClause(sb, "?vertex", uris);
+        }
+        final String queryStr = VERTICES.replace(Templates.VALUES, sb.toString());
+        return queryStr;
     }
     
     public String vertexCount() {
@@ -241,27 +370,22 @@ public class SparqlGenerator {
     }
     
     public String edges(final List<URI> uris) {
-        return elements(EDGES, uris);
+        final StringBuilder sb = new StringBuilder();
+        if (!uris.isEmpty()) {
+            buildValuesClause(sb, "?eid", uris);
+        }
+        final String queryStr = EDGES.replace(Templates.VALUES, sb.toString());
+        return queryStr;
     }
     
     public String edgeCount() {
         return EDGE_COUNT;
     }
     
-    private String elements(final String template, 
-            final List<URI> uris) {
-        final StringBuilder sb = new StringBuilder();
-        if (!uris.isEmpty()) {
-            buildValuesClause(sb, "?id", uris);
-        }
-        final String queryStr = template.replace(Templates.VALUES, sb.toString());
-        return queryStr;
-    }
-    
     public String properties(final BlazeReifiedElement element, final List<URI> uris) {
         final StringBuilder vc = new StringBuilder();
         if (!uris.isEmpty()) {
-            buildValuesClause(vc, "?p", uris);
+            buildValuesClause(vc, "?key", uris);
         }
         final StringBuilder s = new StringBuilder();
         final BigdataBNode sid = element.rdfId();
@@ -280,7 +404,7 @@ public class SparqlGenerator {
     public String vertexProperties(final BlazeVertex vertex, final List<URI> uris) {
         final StringBuilder vc = new StringBuilder();
         if (!uris.isEmpty()) {
-            buildValuesClause(vc, "?p", uris);
+            buildValuesClause(vc, "?key", uris);
         }
         final URI uri = vertex.rdfId();
         final String queryStr = 
@@ -321,6 +445,39 @@ public class SparqlGenerator {
         return queryStr;
     }
     
+    public String removeVertex(final BlazeVertex v) {
+        final URI id = v.rdfId();
+        final StringBuilder vc = buildValuesClause(
+                new StringBuilder(), "?id", asList(id));
+        final String queryStr =
+                REMOVE_VERTEX.replace(Templates.VALUES, vc.toString());
+        return queryStr;
+    }
+    
+    public String removeReifiedElement(final BlazeReifiedElement e) {
+        final BigdataBNode sid = e.rdfId();
+        final BigdataStatement stmt = sid.getStatement();
+        final Resource s = stmt.getSubject();
+        final URI p = stmt.getPredicate();
+        final Value o = stmt.getObject();
+        final StringBuilder vc = buildValuesClause(new StringBuilder(), 
+                new String[] { "?s", "?p", "?o" }, 
+                new Value[]  { s, p, o });
+        final String queryStr =
+                REMOVE_REIFIED_ELEMENT.replace(Templates.VALUES, vc.toString());
+        return queryStr;
+    }
+    
+    public String search(final String search, final Match match) {
+        final Boolean matchAll = match != Match.ANY;
+        final Boolean matchExact = match == Match.EXACT;
+        final String queryStr = TEXT_SEARCH
+                .replace("?search", "\""+search+"\"")
+                .replace("?matchAll", matchAll.toString())
+                .replace("?matchExact", matchExact.toString());
+        return queryStr;
+    }
+    
     private StringBuilder buildValuesClause(final StringBuilder sb, 
             final String var, final List<? extends Value> vals) {
         sb.append("    values (").append(var).append(") {");
@@ -331,6 +488,11 @@ public class SparqlGenerator {
         return sb;
     }
 
+    private StringBuilder buildValuesClause(final StringBuilder sb, 
+            final String[] vars, final Value[] vals) {
+        return buildValuesClause(sb, Arrays.asList(vars), Arrays.asList(Arrays.asList(vals)));
+    }
+    
     private StringBuilder buildValuesClause(final StringBuilder sb, 
             final List<String> vars, final List<List<? extends Value>> vals) {
         sb.append("    values (");

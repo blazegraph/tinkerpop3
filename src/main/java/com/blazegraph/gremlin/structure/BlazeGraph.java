@@ -59,6 +59,7 @@ import org.openrdf.model.URI;
 import org.openrdf.model.Value;
 import org.openrdf.query.BindingSet;
 import org.openrdf.query.Query;
+import org.openrdf.query.impl.MapBindingSet;
 import org.openrdf.repository.RepositoryConnection;
 
 import com.bigdata.rdf.internal.XSD;
@@ -81,8 +82,8 @@ import com.blazegraph.gremlin.util.Streams;
 
 import info.aduna.iteration.CloseableIteration;
 
-@Graph.OptIn(Graph.OptIn.SUITE_STRUCTURE_STANDARD)
-@Graph.OptIn("com.blazegraph.gremlin.structure.StructureModifiedSuite")
+//@Graph.OptIn(Graph.OptIn.SUITE_STRUCTURE_STANDARD)
+@Graph.OptIn("com.blazegraph.gremlin.structure.StructureStandardSuite")
 public abstract class BlazeGraph implements Graph {
     
     protected final transient static LambdaLogger log = LambdaLogger.getLogger(BlazeGraph.class);
@@ -100,7 +101,7 @@ public abstract class BlazeGraph implements Graph {
         
         String VALUE_FACTORY = BlazeGraph.class.getName() + ".valueFactory";
         
-        String READ_FROM_WRITE_CXN = BlazeGraph.class.getName() + ".readFromWriteCxn";
+//        String READ_FROM_WRITE_CXN = BlazeGraph.class.getName() + ".readFromWriteCxn";
         
         String LAST_COMMIT_TIME = BlazeGraph.class.getName() + ".lastCommitTime";
         
@@ -108,9 +109,19 @@ public abstract class BlazeGraph implements Graph {
         
     }
     
+    public static enum Match {
+        
+        ANY,
+        
+        ALL,
+        
+        EXACT;
+        
+    }
+    
     private final BlazeValueFactory vf;
     
-    private final Configuration config;
+    protected final Configuration config;
     
     private final SparqlGenerator sparql;
     
@@ -144,7 +155,7 @@ public abstract class BlazeGraph implements Graph {
     
     protected final Transforms transforms;
     
-    private transient volatile boolean readFromWriteCxn = false;
+//    private transient volatile boolean readFromWriteCxn = false;
     
     private transient volatile boolean bulkLoad = false;
     
@@ -156,8 +167,8 @@ public abstract class BlazeGraph implements Graph {
                           .orElse(DefaultBlazeValueFactory.INSTANCE);
         this.sparql = new SparqlGenerator(this.vf);
         
-        this.readFromWriteCxn = config.getBoolean(
-                Options.READ_FROM_WRITE_CXN, false);
+//        this.readFromWriteCxn = config.getBoolean(
+//                Options.READ_FROM_WRITE_CXN, false);
         
         final long lastCommitTime = config.getLong(
                 Options.LAST_COMMIT_TIME, System.currentTimeMillis());
@@ -184,38 +195,40 @@ public abstract class BlazeGraph implements Graph {
      */
     public abstract BigdataValueFactory rdfValueFactory();
     
-    /**
-     * Different implementations will return different types of connections
-     * depending on the mode (client/server, embedded, read-only, etc.)
-     */
-    protected abstract RepositoryConnection writeCxn();
+//    /**
+//     * Different implementations will return different types of connections
+//     * depending on the mode (client/server, embedded, read-only, etc.)
+//     */
+//    protected abstract RepositoryConnection writeCxn();
+//    
+//    /**
+//     * A read-only connection can be used for read operations without blocking
+//     * or being blocked by writers.
+//     */
+//    protected abstract RepositoryConnection readCxn();
+//    
+//    public boolean isReadFromWriteCxn() {
+//        return readFromWriteCxn;
+//    }
+//    
+//    public void setReadFromWriteCxn(final boolean readFromWriteCxn) {
+//        this.readFromWriteCxn = readFromWriteCxn;
+//    }
+//    
+//    /**
+//     * Execute the supplied code fragement and read from the write connection 
+//     * during its execution.
+//     */
+//    public void readFromWriteCxn(final Code code) {
+//        if (isReadFromWriteCxn()) {
+//            Code.wrapThrow(code);
+//        } else {
+//            setReadFromWriteCxn(true);
+//            Code.wrapThrow(code, () -> setReadFromWriteCxn(false));
+//        }
+//    }
     
-    /**
-     * A read-only connection can be used for read operations without blocking
-     * or being blocked by writers.
-     */
-    protected abstract RepositoryConnection readCxn();
-    
-    public boolean isReadFromWriteCxn() {
-        return readFromWriteCxn;
-    }
-    
-    public void setReadFromWriteCxn(final boolean readFromWriteCxn) {
-        this.readFromWriteCxn = readFromWriteCxn;
-    }
-    
-    /**
-     * Execute the supplied code fragement and read from the write connection 
-     * during its execution.
-     */
-    public void readFromWriteCxn(final Code code) {
-        if (isReadFromWriteCxn()) {
-            Code.wrapThrow(code);
-        } else {
-            setReadFromWriteCxn(true);
-            Code.wrapThrow(code, () -> setReadFromWriteCxn(false));
-        }
-    }
+    protected abstract RepositoryConnection cxn();
     
     public boolean isBulkLoad() {
         return bulkLoad;
@@ -237,15 +250,15 @@ public abstract class BlazeGraph implements Graph {
         }
     }
     
-    public RepositoryConnection openRead() {
-        return readFromWriteCxn ? writeCxn() : readCxn();
-    }
-    
-    public void closeRead(final RepositoryConnection cxn) {
-        Code.wrapThrow(() -> { 
-            if (!readFromWriteCxn) cxn.close(); 
-        });
-    }
+//    public RepositoryConnection openRead() {
+//        return readFromWriteCxn ? writeCxn() : readCxn();
+//    }
+//    
+//    public void closeRead(final RepositoryConnection cxn) {
+//        Code.wrapThrow(() -> { 
+//            if (!readFromWriteCxn) cxn.close(); 
+//        });
+//    }
     
     @Override
     public BlazeVertex addVertex(final Object... kvs) {
@@ -271,7 +284,7 @@ public abstract class BlazeGraph implements Graph {
         final BigdataURI uri = rdfvf.asValue(vf.elementURI(id));
         final Literal rdfLabel = rdfvf.asValue(vf.toLiteral(label));
         
-        final RepositoryConnection cxn = writeCxn();
+        final RepositoryConnection cxn = cxn();
         Code.wrapThrow(() -> {
             cxn.add(uri, LABEL, rdfLabel);
         });
@@ -281,7 +294,7 @@ public abstract class BlazeGraph implements Graph {
         return vertex;
     }
 
-    BlazeEdge addEdge(final BlazeVertex from, final BlazeVertex to,
+    public BlazeEdge addEdge(final BlazeVertex from, final BlazeVertex to,
             final String label, final Object... kvs) {
         ElementHelper.validateLabel(label);
         ElementHelper.legalPropertyKeyValueArray(kvs);
@@ -307,7 +320,7 @@ public abstract class BlazeGraph implements Graph {
         final BigdataStatement edgeStmt = 
                 rdfvf.createStatement(from.rdfId(), uri, to.rdfId());
         
-        final RepositoryConnection cxn = writeCxn();
+        final RepositoryConnection cxn = cxn();
         Code.wrapThrow(() -> {
             // blaze:person:1 blaze:knows:7 blaze:person:2 .
             cxn.add(edgeStmt);
@@ -332,7 +345,7 @@ public abstract class BlazeGraph implements Graph {
         final URI p = rdfvf.asValue(vf.propertyURI(key));
         final Literal lit = rdfvf.asValue(vf.toLiteral(val));
         
-        final RepositoryConnection cxn = writeCxn();
+        final RepositoryConnection cxn = cxn();
         Code.wrapThrow(() -> {
             final BigdataStatement stmt = rdfvf.createStatement(s, p, lit);
             if (!bulkLoad) {
@@ -366,7 +379,7 @@ public abstract class BlazeGraph implements Graph {
         final BigdataBNode sid = rdfvf.createBNode(stmt);
         final String vpId = vertexPropertyId(stmt);
         
-        final RepositoryConnection cxn = writeCxn();
+        final RepositoryConnection cxn = cxn();
         Code.wrapThrow(() -> {
             if (cardinality == Cardinality.list) {
                 // <s> <key> timestamp .
@@ -376,7 +389,7 @@ public abstract class BlazeGraph implements Graph {
             } else {
                 if (cardinality == Cardinality.single && !bulkLoad) {
                     final String queryStr = sparql.cleanVertexProps(s, p, lit);
-                    update(cxn, queryStr, nextQueryId());
+                    update(queryStr);
                 }
                 // << stmt >> <key> "val" .
                 cxn.add(stmt);
@@ -410,35 +423,41 @@ public abstract class BlazeGraph implements Graph {
     }
     
     void remove(final BlazeVertex vertex) {
-        try (CloseableIterator<Edge> it = vertex.edges(Direction.BOTH)) {
-            it.forEachRemaining(e -> {
-                remove((BlazeReifiedElement) e);
-            });
-        }
-        try (CloseableIterator<VertexProperty<Object>> it = vertex.properties()) {
-            it.forEachRemaining(vp -> {
-                remove((BlazeReifiedElement) vp);
-            });
-        }
-        final RepositoryConnection cxn = writeCxn();
-        Code.wrapThrow(() -> {
-            final URI uri = vertex.rdfId();
-            cxn.remove(uri, null, null);
-        });
+//        try (CloseableIterator<Edge> it = vertex.edges(Direction.BOTH)) {
+//            it.forEachRemaining(e -> {
+//                remove((BlazeReifiedElement) e);
+//            });
+//        }
+//        try (CloseableIterator<VertexProperty<Object>> it = vertex.properties()) {
+//            it.forEachRemaining(vp -> {
+//                remove((BlazeReifiedElement) vp);
+//            });
+//        }
+//        final RepositoryConnection cxn = cxn();
+//        Code.wrapThrow(() -> {
+//            final URI uri = vertex.rdfId();
+//            cxn.remove(uri, null, null);
+//        });
+        
+        final String queryStr = sparql.removeVertex(vertex);
+        update(queryStr);
     }
 
     void remove(final BlazeReifiedElement element) {
-        final RepositoryConnection cxn = writeCxn();
-        Code.wrapThrow(() -> {
-            final BigdataBNode sid = element.rdfId();
-            final BigdataStatement stmt = sid.getStatement();
-            cxn.remove(stmt);
-            cxn.remove(sid, null, null);
-        });
+//        final BigdataBNode sid = element.rdfId();
+//        final BigdataStatement stmt = sid.getStatement();
+//        final RepositoryConnection cxn = cxn();
+//        Code.wrapThrow(() -> {
+//            cxn.remove(stmt);
+//            cxn.remove(sid, null, null);
+//        });
+        
+        final String queryStr = sparql.removeReifiedElement(element);
+        update(queryStr);
     }
     
     <V> void remove(final BlazeProperty<V> prop) {
-        final RepositoryConnection cxn = writeCxn();
+        final RepositoryConnection cxn = cxn();
         Code.wrapThrow(() -> {
             cxn.remove(prop.s(), prop.p(), prop.o());
         });
@@ -465,12 +484,9 @@ public abstract class BlazeGraph implements Graph {
         final List<URI> uris = validateIds(vertexIds);
         final String queryStr = sparql.vertices(uris);
 
-        final RepositoryConnection cxn = openRead();
-        return Code.wrapThrow(() -> { 
-            final Stream<Vertex> stream = select(cxn, queryStr, nextQueryId())
-                    .map(transforms.vertex);
-            return CloseableIterator.of(stream);
-        });
+        final Stream<Vertex> stream = _select(queryStr, nextQueryId())
+                .map(transforms.vertex);
+        return CloseableIterator.of(stream);
     }
     
     protected String nextQueryId() {
@@ -483,7 +499,7 @@ public abstract class BlazeGraph implements Graph {
     }
     
     public Optional<BlazeEdge> edge(final Object edgeId) {
-        try (final CloseableIterator<Edge> it = edges(edgeId)) {
+        try (CloseableIterator<Edge> it = edges(edgeId)) {
             final Optional<BlazeEdge> e = it.hasNext() ? 
                     Optional.of((BlazeEdge) it.next()) : Optional.empty();
             if (it.hasNext()) {
@@ -498,12 +514,9 @@ public abstract class BlazeGraph implements Graph {
         final List<URI> uris = validateIds(edgeIds);
         final String queryStr = sparql.edges(uris);
         
-        final RepositoryConnection cxn = openRead();
-        return Code.wrapThrow(() -> {
-            final Stream<Edge> stream = select(cxn, queryStr, nextQueryId())
-                    .map(transforms.edge);
-            return CloseableIterator.of(stream);
-        });
+        final Stream<Edge> stream = _select(queryStr, nextQueryId())
+                .map(transforms.edge);
+        return CloseableIterator.of(stream);
     }
     
     CloseableIterator<Edge> edgesFromVertex(final BlazeVertex src, 
@@ -512,12 +525,9 @@ public abstract class BlazeGraph implements Graph {
                 Stream.of(edgeLabels).map(vf::toLiteral).collect(toList());
         final String queryStr = sparql.edgesFromVertex(src, dir, lits);
         
-        final RepositoryConnection cxn = openRead();
-        return Code.wrapThrow(() -> {
-            final Stream<Edge> stream = select(cxn, queryStr, nextQueryId())
-                    .map(transforms.edge);
-            return CloseableIterator.of(stream);
-        });
+        final Stream<Edge> stream = _select(queryStr, nextQueryId())
+                .map(transforms.edge);
+        return CloseableIterator.of(stream);
     }
     
     <V> CloseableIterator<Property<V>> properties(
@@ -526,12 +536,9 @@ public abstract class BlazeGraph implements Graph {
                 Stream.of(keys).map(vf::propertyURI).collect(toList());
         final String queryStr = sparql.properties(element, uris);
         
-        final RepositoryConnection cxn = openRead();
-        return Code.wrapThrow(() -> { 
-            final Stream<Property<V>> stream = select(cxn, queryStr, nextQueryId())
-                    .map(transforms.<V>property(element)); 
-            return CloseableIterator.of(stream);
-        });
+        final Stream<Property<V>> stream = _select(queryStr, nextQueryId())
+                .map(transforms.<V>property(element)); 
+        return CloseableIterator.of(stream);
     }
     
     <V> CloseableIterator<VertexProperty<V>> properties(
@@ -540,26 +547,17 @@ public abstract class BlazeGraph implements Graph {
                 Stream.of(keys).map(vf::propertyURI).collect(toList());
         final String queryStr = sparql.vertexProperties(vertex, uris);
         
-        final RepositoryConnection cxn = openRead();
-        return Code.wrapThrow(() -> {
-            final Stream<VertexProperty<V>> stream = select(cxn, queryStr, nextQueryId())
-                    .map(transforms.<V>vertexProperty(vertex)); 
-            return CloseableIterator.of(stream);
-        });
+        final Stream<VertexProperty<V>> stream = _select(queryStr, nextQueryId())
+                .map(transforms.<V>vertexProperty(vertex)); 
+        return CloseableIterator.of(stream);
     }
     
     protected int count(final String queryStr) {
-        final RepositoryConnection cxn = openRead();
-        return Code.wrapThrow(
-            () -> { /* try */ 
-                try (Stream<BindingSet> stream = select(cxn, queryStr, nextQueryId())) {
-                    return stream.map(bs -> (Literal) bs.getValue("count"))
-                                 .map(Literal::intValue)
-                                 .findFirst().get();
-                }
-            },  
-            () -> closeRead(cxn) /* finally */
-        );
+        try (Stream<BindingSet> stream = _select(queryStr, nextQueryId())) {
+            return stream.map(bs -> (Literal) bs.getValue("count"))
+                         .map(Literal::intValue)
+                         .findFirst().get();
+        }
     }
     
     protected List<URI> validateIds(final Object... elementIds) {
@@ -584,20 +582,20 @@ public abstract class BlazeGraph implements Graph {
     
     protected class Transforms {
     
-        protected final 
+        public final 
         Function<BindingSet, Vertex> vertex = bs -> {
             
-            final BigdataURI uri = (BigdataURI) bs.getValue("id");
+            final BigdataURI uri = (BigdataURI) bs.getValue("vertex");
             final Literal label = (Literal) bs.getValue("label");
             final BlazeVertex vertex = new BlazeVertex(BlazeGraph.this, uri, label);
             return vertex;
             
         };
         
-        protected final 
+        public final 
         Function<BindingSet, Edge> edge = bs -> {
             
-            final BigdataBNode s = (BigdataBNode) bs.getValue("sid");
+            final BigdataBNode s = (BigdataBNode) bs.getValue("edge");
             final BigdataStatement stmt = s.getStatement();
             final Literal label = (Literal) bs.getValue("label");
             final BigdataURI fromURI = (BigdataURI) stmt.getSubject();
@@ -613,31 +611,33 @@ public abstract class BlazeGraph implements Graph {
                 
         };
         
-        protected final <V> Function<BindingSet, Property<V>> 
+        public final <V> Function<BindingSet, Property<V>> 
         property(final BlazeReifiedElement e) {
             return bs -> {
                 
                 log.debug(() -> bs);
-                final URI p = (URI) bs.getValue("p");
-                final Literal o = (Literal) bs.getValue("o");
+                final URI key = (URI) bs.getValue("key");
+                final Literal val = (Literal) bs.getValue("val");
                 final BlazeProperty<V> prop = 
-                        new BlazeProperty<>(BlazeGraph.this, e, p, o);
+                        new BlazeProperty<>(BlazeGraph.this, e, key, val);
                 return prop;
                 
             };
         }
         
-        protected final <V> Function<BindingSet, VertexProperty<V>> 
+        public final <V> Function<BindingSet, VertexProperty<V>> 
         vertexProperty(final BlazeVertex v) {
             return bs -> {
 
                 log.debug(() -> bs);
-                final URI p = (URI) bs.getValue("p");
-                final Literal o = (Literal) bs.getValue("o");
+//                final URI key = (URI) bs.getValue("key");
+                final Literal val = (Literal) bs.getValue("val");
                 final BigdataBNode sid = (BigdataBNode) bs.getValue("vp");
-                final String vpId = vertexPropertyId(sid.getStatement());
+                final BigdataStatement stmt = sid.getStatement();
+                final URI key = stmt.getPredicate();
+                final String vpId = vertexPropertyId(stmt);
                 final BlazeProperty<V> prop = 
-                        new BlazeProperty<>(BlazeGraph.this, v, p, o);
+                        new BlazeProperty<>(BlazeGraph.this, v, key, val);
                 final BlazeVertexProperty<V> bvp = 
                         new BlazeVertexProperty<>(prop, vpId, sid);
                 return bvp;
@@ -648,7 +648,7 @@ public abstract class BlazeGraph implements Graph {
         /**
          * Convert SPARQL/RDF results into PG form.
          */
-        protected final 
+        public final 
         Function<BindingSet,BlazeBindingSet> bindingSet = bs -> {
             
             log.debug(() -> bs);
@@ -684,7 +684,7 @@ public abstract class BlazeGraph implements Graph {
         /**
          * Convert a unit of RDF data to an atomic unit of PG data.
          */
-        protected final 
+        public final 
         Function<Statement, Optional<BlazeGraphAtom>> graphAtom = stmt -> {
 
             final Resource s = stmt.getSubject();
@@ -802,40 +802,76 @@ public abstract class BlazeGraph implements Graph {
             
         };
         
-        protected final 
+        public final 
         Function<BindingSet,Optional<BlazeGraphEdit>> history = bs -> {
             
-          final BigdataBNode sid = (BigdataBNode) bs.getValue("sid");
-          final BigdataStatement stmt = sid.getStatement();
-          final URI a = (URI) bs.getValue("action");
-          final Literal t = (Literal) bs.getValue("time");
-          
-          if (!t.getDatatype().equals(XSD.DATETIME)) {
-              throw new RuntimeException("Unexpected timestamp in result: " + bs);
-          }
-          
-          final BlazeGraphEdit.Action action;
-          if (a.equals(RDRHistory.Vocab.ADDED)) {
-              action = Action.Add;
-          } else if (a.equals(RDRHistory.Vocab.REMOVED)) {
-              action = Action.Remove;
-          } else {
-              throw new RuntimeException("Unexpected action in result: " + bs);
-          }
-          
-          final long timestamp = DateTimeExtension.getTimestamp(t.getLabel());
-          return graphAtom.apply(stmt)
-                          .map(atom -> new BlazeGraphEdit(action, atom, timestamp));
-          
-      };
+            final BigdataBNode sid = (BigdataBNode) bs.getValue("sid");
+            final BigdataStatement stmt = sid.getStatement();
+            final URI a = (URI) bs.getValue("action");
+            final Literal t = (Literal) bs.getValue("time");
+
+            if (!t.getDatatype().equals(XSD.DATETIME)) {
+                throw new RuntimeException("Unexpected timestamp in result: " + bs);
+            }
+
+            final BlazeGraphEdit.Action action;
+            if (a.equals(RDRHistory.Vocab.ADDED)) {
+                action = Action.Add;
+            } else if (a.equals(RDRHistory.Vocab.REMOVED)) {
+                action = Action.Remove;
+            } else {
+                throw new RuntimeException("Unexpected action in result: " + bs);
+            }
+
+            final long timestamp = DateTimeExtension.getTimestamp(t.getLabel());
+            return graphAtom.apply(stmt).map(atom -> new BlazeGraphEdit(action, atom, timestamp));
+
+        };
       
+        public final <V> Function<BindingSet, Property<V>> 
+        search() {
+            return bs -> {
+                
+                log.debug(() -> bs);
+                final Property<V> prop;
+                if (bs.hasBinding("edge")) {
+                    /*
+                     * Edge property
+                     */
+                    final BlazeEdge edge = (BlazeEdge) this.edge.apply(bs);
+                    prop = this.<V>property(edge).apply(bs);
+                } else {
+                    final BlazeVertex vertex = (BlazeVertex) this.vertex.apply(bs);
+                    if (bs.hasBinding("vpVal")) {
+                        /*
+                         * VertexProperty property
+                         */
+                        final MapBindingSet remap = new MapBindingSet() {{
+                            addBinding("vp", bs.getValue("vp"));
+                            addBinding("val", bs.getValue("vpVal"));
+                        }};
+                        final BlazeVertexProperty<V> vp = (BlazeVertexProperty<V>) 
+                                this.<V>vertexProperty(vertex).apply(remap);
+                        prop = this.<V>property(vp).apply(bs);
+                    } else {
+                        /*
+                         * Vertex property
+                         */
+                        prop = this.<V>vertexProperty(vertex).apply(bs);
+                    }
+                }
+                return prop;
+                
+            };
+        }
+        
     }
         
     @Override
     public abstract Transaction tx();
 
     @Override
-    public abstract void close() throws Exception;
+    public abstract void close();
 
     @Override
     public Configuration configuration() {
@@ -899,10 +935,8 @@ public abstract class BlazeGraph implements Graph {
     public CloseableIterator<BlazeGraphAtom> project(final String queryStr,
             String externalQueryId) throws Exception {
         
-        final RepositoryConnection cxn = openRead();
-        
         final Stream<BlazeGraphAtom> stream =
-                project(cxn, queryStr, externalQueryId)
+                _project(queryStr, externalQueryId)
                         .map(transforms.graphAtom)
                         .filter(Optional::isPresent)
                         .map(Optional::get);
@@ -916,8 +950,7 @@ public abstract class BlazeGraph implements Graph {
      * <p>
      * Warning: You MUST close this iterator when finished.
      */
-    public CloseableIterator<BlazeBindingSet> select(final String queryStr)
-            throws Exception {
+    public CloseableIterator<BlazeBindingSet> select(final String queryStr) {
         return this.select(queryStr, nextQueryId());
     }
 
@@ -926,13 +959,11 @@ public abstract class BlazeGraph implements Graph {
      * <p>
      * Warning: You MUST close this iterator when finished.
      */
-    public CloseableIterator<BlazeBindingSet> select(final String queryStr,
-            String extQueryId) throws Exception {
+    public CloseableIterator<BlazeBindingSet> select(
+            final String queryStr, final String extQueryId) {
 
-        final RepositoryConnection cxn = openRead();
-        
         final Stream<BlazeBindingSet> stream = 
-                select(cxn, queryStr, extQueryId)
+                _select(queryStr, extQueryId)
                         .map(transforms.bindingSet);
                         
         return CloseableIterator.of(stream);
@@ -942,21 +973,15 @@ public abstract class BlazeGraph implements Graph {
     /**
      * Select results using a SPARQL query.
      */
-    public boolean ask(final String queryStr) throws Exception {
+    public boolean ask(final String queryStr) {
         return ask(queryStr, nextQueryId());
     }
 
     /**
      * Select results using a SPARQL query.
      */
-    public boolean ask(final String queryStr, String externalQueryId)
-            throws Exception {
-        
-        final RepositoryConnection cxn = readFromWriteCxn ? 
-                writeCxn() : readCxn();
-                
-        return ask(cxn, queryStr, externalQueryId);
-                
+    public boolean ask(final String queryStr, final String extQueryId) {
+        return _ask(queryStr, extQueryId);
     }
     
     /**
@@ -971,7 +996,7 @@ public abstract class BlazeGraph implements Graph {
      * Update graph using SPARQL Update.
      */
     public void update(final String queryStr, final String extQueryId) {
-        update(writeCxn(), queryStr, extQueryId);
+        _update(queryStr, extQueryId);
     }
     
     /**
@@ -997,10 +1022,8 @@ public abstract class BlazeGraph implements Graph {
                 ids.stream().map(vf::elementURI).collect(toList());
         final String queryStr = sparql.history(uris);
                     
-        final RepositoryConnection cxn = openRead();
-        
         final Stream<BlazeGraphEdit> stream = 
-                select(cxn, queryStr, nextQueryId())
+                _select(queryStr, nextQueryId())
                         .map(transforms.history)
                         .filter(Optional::isPresent)
                         .map(Optional::get);
@@ -1018,9 +1041,21 @@ public abstract class BlazeGraph implements Graph {
         });
     }
     
+    public <V> CloseableIterator<Property<V>> search(final String search, 
+            final Match match) {
+        
+        final String queryStr = sparql.search(search, match);
+        
+        final Stream<Property<V>> stream = _select(queryStr, nextQueryId())
+                .map(transforms.<V>search()); 
+        
+        return CloseableIterator.of(stream);
+        
+    }
+    
     protected class GraphStreamer<E> {
 
-        private final RepositoryConnection cxn;
+//        private final RepositoryConnection cxn;
         
         private final CloseableIteration<E,?> result;
         
@@ -1028,10 +1063,10 @@ public abstract class BlazeGraph implements Graph {
         
         private final Iterator<E> it;
         
-        public GraphStreamer(final RepositoryConnection cxn,
+        public GraphStreamer(//final RepositoryConnection cxn,
                 final CloseableIteration<E,?> result,
                 final Optional<Code> onClose) {
-            this.cxn = cxn;
+//            this.cxn = cxn;
             this.result = result;
             this.onClose = onClose.isPresent() ? onClose.get() : null;
             this.it = new Iterator<E>() {
@@ -1075,7 +1110,7 @@ public abstract class BlazeGraph implements Graph {
                     onClose.run();
                 }, 
                 () -> { /* finally */
-                    closeRead(cxn);
+//                    closeRead(cxn);
                     closed = true;
                 }
             );
@@ -1083,17 +1118,17 @@ public abstract class BlazeGraph implements Graph {
         
     }
 
-    protected abstract Stream<BindingSet> select(final RepositoryConnection cxn, 
-            final String queryStr, final String externalQueryId);
+    protected abstract Stream<BindingSet> _select( 
+            final String queryStr, final String extQueryId);
     
-    protected abstract Stream<Statement> project(final RepositoryConnection cxn, 
-            final String queryStr, final String externalQueryId);
+    protected abstract Stream<Statement> _project( 
+            final String queryStr, final String extQueryId);
     
-    protected abstract boolean ask(final RepositoryConnection cxn, 
-            final String queryStr, final String externalQueryId);
+    protected abstract boolean _ask( 
+            final String queryStr, final String extQueryId);
     
-    protected abstract void update(final RepositoryConnection cxn, 
-            final String queryStr, final String externalQueryId);
+    protected abstract void _update( 
+            final String queryStr, final String extQueryId);
     
     /**
      * Utility function to set the Query timeout to the global

@@ -31,30 +31,15 @@ import org.apache.tinkerpop.gremlin.structure.VertexProperty.Cardinality;
 
 import com.bigdata.rdf.sail.RDRHistory;
 import com.bigdata.rdf.store.AbstractTripleStore;
+import com.blazegraph.gremlin.embedded.BlazeGraphEmbedded;
 import com.blazegraph.gremlin.listener.BlazeGraphEdit;
 import com.blazegraph.gremlin.util.LambdaLogger;
 
 import junit.framework.TestCase;
 
-public class TestHistory extends TestCase {
+public class TestHistory extends TestBlazeGraph {
 
     private final static transient LambdaLogger log = LambdaLogger.getLogger(TestHistory.class);
-    
-    private BlazeGraphEmbedded graph = null;
-    
-    @Override
-    public void setUp() throws Exception {
-//        this.graph = EmbeddedBlazeGraphProvider.open(new HashMap<String,String>() {{
-//            put(AbstractTripleStore.Options.RDR_HISTORY_CLASS, RDRHistory.class.getName());
-//        }});
-        this.graph = EmbeddedBlazeGraphProvider.open();
-    }
-    
-    @Override
-    public void tearDown() throws Exception {
-        this.graph.close();
-        this.graph.__tearDownUnitTest();
-    }
     
     public void testVertexHistory() throws Exception {
         

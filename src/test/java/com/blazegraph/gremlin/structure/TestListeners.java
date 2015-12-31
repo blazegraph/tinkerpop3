@@ -29,27 +29,15 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty.Cardinality;
 
+import com.blazegraph.gremlin.embedded.BlazeGraphEmbedded;
 import com.blazegraph.gremlin.listener.BlazeGraphEdit;
 import com.blazegraph.gremlin.util.LambdaLogger;
 
 import junit.framework.TestCase;
 
-public class TestListeners extends TestCase {
+public class TestListeners extends TestBlazeGraph {
 
     private final static transient LambdaLogger log = LambdaLogger.getLogger(TestListeners.class);
-    
-    private BlazeGraphEmbedded graph = null;
-    
-    @Override
-    public void setUp() throws Exception {
-        this.graph = EmbeddedBlazeGraphProvider.open();
-    }
-    
-    @Override
-    public void tearDown() throws Exception {
-        this.graph.close();
-        this.graph.__tearDownUnitTest();
-    }
     
     public void testVertices() throws Exception {
         
@@ -140,7 +128,10 @@ public class TestListeners extends TestCase {
     public void testEdges() throws Exception {
         
         final List<BlazeGraphEdit> edits = new LinkedList<>();
-        graph.addListener((edit,rdfEdit) -> edits.add(edit));
+        graph.addListener((edit,rdfEdit) -> {
+            log.debug(() -> rdfEdit);
+            edits.add(edit);
+        });
         
         final BlazeVertex a = graph.addVertex(T.id, "a");
         final BlazeVertex b = graph.addVertex(T.id, "b");
