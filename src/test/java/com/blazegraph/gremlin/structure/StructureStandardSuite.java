@@ -24,6 +24,7 @@ package com.blazegraph.gremlin.structure;
 
 import static org.junit.Assert.assertEquals;
 
+import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.AbstractGremlinSuite;
 import org.apache.tinkerpop.gremlin.AbstractGremlinTest;
 import org.apache.tinkerpop.gremlin.ExceptionCoverage;
@@ -61,13 +62,16 @@ import org.apache.tinkerpop.gremlin.structure.util.reference.ReferenceGraphTest;
 import org.apache.tinkerpop.gremlin.structure.util.reference.ReferenceVertexPropertyTest;
 import org.apache.tinkerpop.gremlin.structure.util.reference.ReferenceVertexTest;
 import org.apache.tinkerpop.gremlin.structure.util.star.StarGraphTest;
+import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 import org.junit.Test;
 import org.junit.experimental.runners.Enclosed;
 import org.junit.runner.RunWith;
 import org.junit.runners.model.InitializationError;
 import org.junit.runners.model.RunnerBuilder;
 
-public class StructureModifiedSuite extends AbstractGremlinSuite {
+import com.blazegraph.gremlin.embedded.BlazeGraphEmbedded;
+
+public class StructureStandardSuite extends AbstractGremlinSuite {
 
     
     /**
@@ -107,7 +111,7 @@ public class StructureModifiedSuite extends AbstractGremlinSuite {
             
     };
 
-    public StructureModifiedSuite(final Class<?> klass, final RunnerBuilder builder) throws InitializationError {
+    public StructureStandardSuite(final Class<?> klass, final RunnerBuilder builder) throws InitializationError {
         super(klass, builder, allTests, null, false, TraversalEngine.Type.STANDARD);
     }
     

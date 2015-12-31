@@ -27,6 +27,6 @@ import org.junit.runner.RunWith;
 
 import junit.framework.TestCase;
 
-@RunWith(StructureModifiedSuite.class)
+@RunWith(StructureStandardSuite.class)
 @GraphProviderClass(provider = EmbeddedBlazeGraphProvider.class, graph = BlazeGraph.class)
 public class BlazeGraphStructureStandardTest extends TestCase {}

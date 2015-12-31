@@ -20,7 +20,7 @@ You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
-package com.blazegraph.gremlin.structure;
+package com.blazegraph.gremlin.embedded;
 
 import java.util.Collection;
 import java.util.Iterator;
@@ -35,13 +35,13 @@ import java.util.concurrent.Future;
 import java.util.stream.Stream;
 
 import org.apache.commons.configuration.Configuration;
+import org.apache.tinkerpop.gremlin.structure.Transaction;
 import org.apache.tinkerpop.gremlin.structure.util.AbstractThreadLocalTransaction;
 import org.openrdf.model.Statement;
 import org.openrdf.query.BindingSet;
 import org.openrdf.query.GraphQueryResult;
 import org.openrdf.query.QueryLanguage;
 import org.openrdf.query.TupleQueryResult;
-import org.openrdf.repository.RepositoryConnection;
 import org.openrdf.repository.sail.SailQuery;
 
 import com.bigdata.bop.engine.IRunningQuery;
@@ -78,6 +78,7 @@ import com.bigdata.util.MillisecondTimestampFactory;
 import com.blazegraph.gremlin.listener.BlazeGraphEdit;
 import com.blazegraph.gremlin.listener.BlazeGraphEdit.Action;
 import com.blazegraph.gremlin.listener.BlazeGraphListener;
+import com.blazegraph.gremlin.structure.BlazeGraph;
 import com.blazegraph.gremlin.util.Code;
 import com.blazegraph.gremlin.util.LambdaLogger;
 
@@ -85,17 +86,6 @@ public class BlazeGraphEmbedded extends BlazeGraph {
 
     private final transient static LambdaLogger log = LambdaLogger.getLogger(BlazeGraphEmbedded.class);
 
-    public static interface Options {
-        
-        /**
-         * LocalBlazeGraph assumes the user has a well-configured and fully
-         * initialized BigdataSailRepository already built and set in the 
-         * Configuration.
-         */
-        String REPOSITORY = BlazeGraphEmbedded.class.getName() + ".repository";
-        
-    }
-    
     static {
         /*
          * We do not want auto-commit for SPARQL Update.
@@ -105,9 +95,8 @@ public class BlazeGraphEmbedded extends BlazeGraph {
         AST2BOpUpdate.AUTO_COMMIT = false;
     }
     
-    public static BlazeGraphEmbedded open(final Configuration config) {
-        final BigdataSailRepository repo = (BigdataSailRepository)
-                config.getProperty(Options.REPOSITORY);
+    public static BlazeGraphEmbedded open(final BigdataSailRepository repo,
+            final Configuration config) {
         Objects.requireNonNull(repo);
         if (!repo.getDatabase().isStatementIdentifiers()) {
             throw new IllegalArgumentException("BlazeGraph/TP3 requires statement identifiers.");
@@ -118,47 +107,45 @@ public class BlazeGraphEmbedded extends BlazeGraph {
          */
         final long lastCommitTime = lastCommitTime(repo);
         config.setProperty(BlazeGraph.Options.LAST_COMMIT_TIME, lastCommitTime);
-        
-        return new BlazeGraphEmbedded(config);
+
+        return new BlazeGraphEmbedded(repo, config);
     }
     
     /*
      * Take a quick peek at the last commit time on the supplied journal file.
-     * If it's ahead of our system time, then use that last commit time as
-     * a lower bound on blaze's transaction timestamps.  Otherwise just use
-     * the system time as usual.
+     * If it's ahead of our system time, then use that last commit time as a
+     * lower bound on blaze's transaction timestamps. Otherwise just use the
+     * system time as usual.
      */
-    private static long lastCommitTime(final BigdataSailRepository repo) {
+    protected static long lastCommitTime(final BigdataSailRepository repo) {
 
         final long systemTime = System.currentTimeMillis();
 
-        log.debug(() -> "temporarily setting lower bound to Long.MAX_VALUE: " + (Long.MAX_VALUE-100));
+        log.debug(() -> "temporarily setting lower bound to Long.MAX_VALUE: " + (Long.MAX_VALUE - 100));
 
         /*
-         * Temporarily set the lower bound to something way way in the future
-         * in case the journal really is ahead of our system clock.
+         * Temporarily set the lower bound to something way way in the future in
+         * case the journal really is ahead of our system clock.
          */
-        MillisecondTimestampFactory.setLowerBound(Long.MAX_VALUE-100);
+        MillisecondTimestampFactory.setLowerBound(Long.MAX_VALUE - 100);
 
         /*
          * Pull the last commit time from the journal.
          */
-//        final long lastCommitTime =
-//                journal.getRootBlockView().getLastCommitTime();
-        final long lastCommitTime =
-                repo.getDatabase().getIndexManager().getLastCommitTime();
+        // final long lastCommitTime =
+        // journal.getRootBlockView().getLastCommitTime();
+        final long lastCommitTime = repo.getDatabase().getIndexManager().getLastCommitTime();
 
         final long lowerBound;
-        
+
         if (lastCommitTime > 0l && systemTime < lastCommitTime) {
 
             log.info(() -> "found clock skew, using last commit time: " + lastCommitTime);
 
             /*
              * If the journal has a last commit time and if that last commit
-             * time is in the future relative to our system clock, use the
-             * last commit time as a lower bound on blaze transaction
-             * timestamps.
+             * time is in the future relative to our system clock, use the last
+             * commit time as a lower bound on blaze transaction timestamps.
              */
             lowerBound = lastCommitTime;
 
@@ -172,214 +159,46 @@ public class BlazeGraphEmbedded extends BlazeGraph {
             lowerBound = systemTime;
 
         }
-        
+
         MillisecondTimestampFactory.setLowerBound(lowerBound);
-        
+
         return lowerBound;
 
     }
     
 
+    
 
-    private final BigdataSailRepository repo;
+    protected final BigdataSailRepository repo;
     
-    private final ChangeLogTransformer listener = new ChangeLogTransformer();
-    
-    private final List<BlazeGraphListener> listeners = new CopyOnWriteArrayList<>();
+    protected final List<BlazeGraphListener> listeners = new CopyOnWriteArrayList<>();
     
     private final BlazeTransaction tx = new BlazeTransaction();
 
-    private BlazeGraphEmbedded(final Configuration config) {
+    protected final ChangeLogTransformer listener = new ChangeLogTransformer();
+    
+    BlazeGraphEmbedded(final BigdataSailRepository repo,
+            final Configuration config) {
         super(config);
-        this.repo = (BigdataSailRepository) config.getProperty(Options.REPOSITORY);
+        
+        this.repo = repo;
     }
     
-    public BigdataSailRepository getRepository() {
-        return repo;
-    }
-    
-    public BigdataValueFactory rdfValueFactory() {
-        return (BigdataValueFactory) repo.getValueFactory();
-    }
-    
-    public QueryEngine getQueryEngine() {
-        final IIndexManager ndxManager = getIndexManager();
-        final QueryEngine queryEngine = (QueryEngine) 
-                QueryEngineFactory.getInstance().getQueryController(ndxManager);
-        return queryEngine;
-    }
-
-    public IIndexManager getIndexManager() {
-        return repo.getDatabase().getIndexManager();
-    }
-
-    @Override
-    protected Stream<BindingSet> select(final RepositoryConnection cxn, 
-            final String queryStr, final String externalQueryId) {
-
-        logQuery(queryStr);
-        try {
-            final BigdataSailTupleQuery query = (BigdataSailTupleQuery) 
-                    cxn.prepareTupleQuery(QueryLanguage.SPARQL, queryStr);
-            final UUID queryId = setupQuery((BigdataSailRepositoryConnection) cxn,
-                        query, query.getASTContainer(), QueryType.CONSTRUCT,
-                        externalQueryId);
-            
-            sparqlLog.trace(() -> "optimized AST:\n"+query.optimize());
-            
-            final TupleQueryResult result = query.evaluate();
-            final Optional<Code> onClose = 
-                    Optional.of(() -> finalizeQuery(queryId));
-            return new GraphStreamer<>(cxn, result, onClose).stream();
-        } catch (Exception ex) {
-            /*
-             * If there is an exception while preparing/evaluating the
-             * query (before we get a TupleQueryResult) or during construction
-             * of the closeable iterator / stream then we must close the read 
-             * connection ourselves.
-             */
-            closeRead(cxn);
-            if (ex instanceof RuntimeException) {
-                throw (RuntimeException) ex;
-            } else {
-                throw new RuntimeException(ex);
-            }
-        }
+    public BlazeGraphReadOnly readOnlyConnection() {
+        if (closed) throw new IllegalStateException();
         
-    }
-    
-    protected Stream<Statement> project(final RepositoryConnection cxn, 
-            final String queryStr, final String externalQueryId) {
-        
-        logQuery(queryStr);
-        try {
-            final BigdataSailGraphQuery query = (BigdataSailGraphQuery) 
-                    cxn.prepareGraphQuery(QueryLanguage.SPARQL, queryStr);
-            final UUID queryId = setupQuery((BigdataSailRepositoryConnection) cxn,
-                        query, query.getASTContainer(), QueryType.CONSTRUCT,
-                        externalQueryId);
-        
-            sparqlLog.trace(() -> "optimized AST:\n"+query.optimize());
-        
-            final GraphQueryResult result = query.evaluate();
-            final Optional<Code> onClose = 
-                    Optional.of(() -> finalizeQuery(queryId));
-            return new GraphStreamer<>(cxn, result, onClose).stream();
-        } catch (Exception ex) {
-            /*
-             * If there is an exception while preparing/evaluating the
-             * query (before we get a GraogQueryResult) or during construction
-             * of the closeable iterator / stream then we must close the read 
-             * connection ourselves.
-             */
-            closeRead(cxn);
-            if (ex instanceof RuntimeException) {
-                throw (RuntimeException) ex;
-            } else {
-                throw new RuntimeException(ex);
-            }
-        }
-        
-    }
-    
-    protected boolean ask(final RepositoryConnection cxn, 
-            final String queryStr, final String externalQueryId) {
-        
-        logQuery(queryStr);
-        return Code.wrapThrow(() -> { /* try */ 
-            final BigdataSailBooleanQuery query = (BigdataSailBooleanQuery) 
-                    cxn.prepareBooleanQuery(QueryLanguage.SPARQL, queryStr);
-            final UUID queryId = setupQuery((BigdataSailRepositoryConnection) cxn,
-                        query, query.getASTContainer(), QueryType.CONSTRUCT,
-                        externalQueryId);
-        
-//            sparqlLog.trace(() -> "optimized AST:\n"+query.optimize());
-        
-            final boolean result = query.evaluate();
-            finalizeQuery(queryId);
-            return result;
-        }, () -> { /* finally */
-            /*
-             * With ask we close the read connection no matter what.
-             */
-            closeRead(cxn);
-        });
-        
-    }
-    
-    protected void update(final RepositoryConnection cxn, 
-            final String queryStr, final String externalQueryId) {
-        
-        logQuery(queryStr);
-        Code.wrapThrow(() -> {
-            final BigdataSailUpdate update = (BigdataSailUpdate) 
-                    cxn.prepareUpdate(QueryLanguage.SPARQL, queryStr);
-            update.execute();
-        });
-        
-    }
-    
-    private void logQuery(final String queryStr) {
-        sparqlLog.info(() -> "query:\n"+ 
-                (queryStr.length() <= SPARQL_LOG_MAX ? 
-                        queryStr : queryStr.substring(0, SPARQL_LOG_MAX)+" ..."));
+        final BigdataSailRepositoryConnection cxn =
+                Code.wrapThrow(() -> repo.getReadOnlyConnection());
+        return new BlazeGraphReadOnly(repo, cxn, config);
     }
     
     @Override
-    public BlazeTransaction tx() {
+    public Transaction tx() {
+        if (closed) throw new IllegalStateException();
+        
         return tx;
     }
     
-    public void commit() {
-        tx.commit();
-    }
-
-    public void rollback() {
-        tx.rollback();
-    }
-
-    private boolean open = true;
-    
-    @Override
-    public synchronized void close() throws Exception {
-//        // if there is a connection open, commit and close
-//        tx.doCommit();
-        if (open) {
-            tx.close();
-            repo.shutDown();
-            open = false;
-        }
-    }
-    
-    @Override
-    protected BigdataSailRepositoryConnection writeCxn() {
-        tx.readWrite();
-        return tx.cxn();
-    }
-
-    @Override
-    protected BigdataSailRepositoryConnection readCxn() {
-        return Code.wrapThrow(() -> repo.getReadOnlyConnection());
-    }
-    
-    public String dumpStore() throws Exception {
-        final BigdataSailRepositoryConnection cxn = readCxn();
-        try {
-            return cxn.getTripleStore().dumpStore().toString();
-        } finally {
-            cxn.close();
-        }
-    }
-    
-    public long statementCount() throws Exception {
-        final BigdataSailRepositoryConnection cxn = readCxn();
-        try {
-            return cxn.getTripleStore().getStatementCount();
-        } finally {
-            cxn.close();
-        }
-    }
-
     public class BlazeTransaction extends AbstractThreadLocalTransaction {
 
         protected final 
@@ -393,11 +212,6 @@ public class BlazeGraphEmbedded extends BlazeGraph {
         @Override
         public boolean isOpen() {
             return (tlTx.get() != null);
-        }
-        
-        public void bulkLoad() {
-            readWrite();
-            setBulkLoad(true);
         }
         
         @Override
@@ -419,9 +233,11 @@ public class BlazeGraphEmbedded extends BlazeGraph {
                 } catch (Exception ex) {
                     throw new TransactionException(ex);
                 } finally {
-                    tlTx.remove();
-                    Code.wrapThrow(() -> cxn.close());
-                    setBulkLoad(false);
+                    /*
+                     * Close the connection on commit per the required
+                     * semantics of Tinkerpop3.
+                     */
+                    close(cxn);
                 }
             }
         }
@@ -435,9 +251,10 @@ public class BlazeGraphEmbedded extends BlazeGraph {
                 } catch (Exception ex) {
                     throw new TransactionException(ex);
                 } finally {
-                    tlTx.remove();
-                    Code.wrapThrow(() -> cxn.close());
-                    setBulkLoad(false);
+                    /*
+                     * Close the connection on rollback.  Not safe to re-use.
+                     */
+                    close(cxn);
                 }
             }
         }
@@ -447,11 +264,14 @@ public class BlazeGraphEmbedded extends BlazeGraph {
             super.doClose();
             final BigdataSailRepositoryConnection cxn = tlTx.get();
             if (cxn != null) {
-                cxn.removeChangeLog(listener);
-                tlTx.remove();
-                Code.wrapThrow(() -> cxn.close());
-                setBulkLoad(false);
+                close(cxn);
             }
+        }
+        
+        private void close(final BigdataSailRepositoryConnection cxn) {
+            cxn.removeChangeLog(listener);
+            tlTx.remove();
+            Code.wrapThrow(() -> cxn.close());
         }
         
         public BigdataSailRepositoryConnection cxn() {
@@ -459,17 +279,9 @@ public class BlazeGraphEmbedded extends BlazeGraph {
         }
         
     }
-
-    public void addListener(final BlazeGraphListener listener) {
-        this.listeners.add(listener);
-    }
-
-    public void removeListener(final BlazeGraphListener listener) {
-        this.listeners.remove(listener);
-    }
-
-    private class ChangeLogTransformer implements IChangeLog {
     
+    private class ChangeLogTransformer implements IChangeLog {
+        
         /**
          * We need to batch and materialize these.
          */
@@ -554,7 +366,7 @@ public class BlazeGraphEmbedded extends BlazeGraph {
         protected List<IChangeRecord> materialize(final List<IChangeRecord> records) {
             
             try {
-                final AbstractTripleStore db = tx.cxn().getTripleStore();
+                final AbstractTripleStore db = cxn().getTripleStore();
     
                 final List<IChangeRecord> materialized = new LinkedList<IChangeRecord>();
     
@@ -650,6 +462,187 @@ public class BlazeGraphEmbedded extends BlazeGraph {
     
     }
     
+    @Override
+    public BigdataSailRepositoryConnection cxn() {
+        if (closed) throw new IllegalStateException();
+
+        tx.readWrite();
+        return tx.cxn();
+    }
+
+    public void commit() {
+        if (closed) throw new IllegalStateException();
+        
+        tx().commit();
+    }
+
+    public void rollback() {
+        if (closed) throw new IllegalStateException();
+        
+        tx().rollback();
+    }
+
+    protected volatile boolean closed = false;
+    @Override
+    public synchronized void close() {
+        if (closed)
+            return;
+        
+        tx.close();
+        Code.wrapThrow(() -> repo.shutDown());
+        closed = true;
+    }
+    
+    public void addListener(final BlazeGraphListener listener) {
+        this.listeners.add(listener);
+    }
+
+    public void removeListener(final BlazeGraphListener listener) {
+        this.listeners.remove(listener);
+    }
+
+//    public BigdataSailRepository getRepository() {
+//        return repo;
+//    }
+    
+    public BigdataValueFactory rdfValueFactory() {
+        return (BigdataValueFactory) repo.getValueFactory();
+    }
+    
+    public QueryEngine getQueryEngine() {
+        final IIndexManager ndxManager = getIndexManager();
+        final QueryEngine queryEngine = (QueryEngine) 
+                QueryEngineFactory.getInstance().getQueryController(ndxManager);
+        return queryEngine;
+    }
+
+    public IIndexManager getIndexManager() {
+        return repo.getDatabase().getIndexManager();
+    }
+
+    @Override
+    protected Stream<BindingSet> _select( 
+            final String queryStr, final String externalQueryId) {
+
+        logQuery(queryStr);
+        return Code.wrapThrow(() -> {
+            final BigdataSailTupleQuery query = (BigdataSailTupleQuery) 
+                    cxn().prepareTupleQuery(QueryLanguage.SPARQL, queryStr);
+            final UUID queryId = setupQuery(query,
+                        query.getASTContainer(), QueryType.CONSTRUCT,
+                        externalQueryId);
+            
+            sparqlLog.trace(() -> "optimized AST:\n"+query.optimize());
+            
+            final TupleQueryResult result = query.evaluate();
+            final Optional<Code> onClose = 
+                    Optional.of(() -> finalizeQuery(queryId));
+            return new GraphStreamer<>(result, onClose).stream();
+//        } catch (Exception ex) {
+//            /*
+//             * If there is an exception while preparing/evaluating the
+//             * query (before we get a TupleQueryResult) or during construction
+//             * of the closeable iterator / stream then we must close the read 
+//             * connection ourselves.
+//             */
+//            closeRead(cxn);
+//            if (ex instanceof RuntimeException) {
+//                throw (RuntimeException) ex;
+//            } else {
+//                throw new RuntimeException(ex);
+//            }
+        });
+        
+    }
+    
+    @Override
+    protected Stream<Statement> _project( 
+            final String queryStr, final String externalQueryId) {
+        
+        logQuery(queryStr);
+        return Code.wrapThrow(() -> {
+            final BigdataSailGraphQuery query = (BigdataSailGraphQuery) 
+                    cxn().prepareGraphQuery(QueryLanguage.SPARQL, queryStr);
+            final UUID queryId = setupQuery(query,
+                        query.getASTContainer(), QueryType.CONSTRUCT,
+                        externalQueryId);
+        
+            sparqlLog.trace(() -> "optimized AST:\n"+query.optimize());
+        
+            final GraphQueryResult result = query.evaluate();
+            final Optional<Code> onClose = 
+                    Optional.of(() -> finalizeQuery(queryId));
+            return new GraphStreamer<>(result, onClose).stream();
+//        } catch (Exception ex) {
+//            /*
+//             * If there is an exception while preparing/evaluating the
+//             * query (before we get a GraogQueryResult) or during construction
+//             * of the closeable iterator / stream then we must close the read 
+//             * connection ourselves.
+//             */
+//            closeRead(cxn);
+//            if (ex instanceof RuntimeException) {
+//                throw (RuntimeException) ex;
+//            } else {
+//                throw new RuntimeException(ex);
+//            }
+        });
+        
+    }
+    
+    @Override
+    protected boolean _ask( 
+            final String queryStr, final String externalQueryId) {
+        
+        logQuery(queryStr);
+        return Code.wrapThrow(() -> { /* try */ 
+            final BigdataSailBooleanQuery query = (BigdataSailBooleanQuery) 
+                    cxn().prepareBooleanQuery(QueryLanguage.SPARQL, queryStr);
+            final UUID queryId = setupQuery(query,
+                        query.getASTContainer(), QueryType.CONSTRUCT,
+                        externalQueryId);
+        
+//            sparqlLog.trace(() -> "optimized AST:\n"+query.optimize());
+        
+            final boolean result = query.evaluate();
+            finalizeQuery(queryId);
+            return result;
+//        }, () -> { /* finally */
+//            /*
+//             * With ask we close the read connection no matter what.
+//             */
+//            closeRead(cxn);
+        });
+        
+    }
+    
+    @Override
+    protected void _update( 
+            final String queryStr, final String externalQueryId) {
+        
+        logQuery(queryStr);
+        Code.wrapThrow(() -> {
+            final BigdataSailUpdate update = (BigdataSailUpdate) 
+                    cxn().prepareUpdate(QueryLanguage.SPARQL, queryStr);
+            update.execute();
+        });
+        
+    }
+    
+    private void logQuery(final String queryStr) {
+        sparqlLog.info(() -> "query:\n"+ 
+                (queryStr.length() <= SPARQL_LOG_MAX ? 
+                        queryStr : queryStr.substring(0, SPARQL_LOG_MAX)+" ..."));
+    }
+    
+    public String dumpStore() throws Exception {
+        return repo.getDatabase().dumpStore().toString();
+    }
+    
+    public long statementCount() throws Exception {
+        return repo.getDatabase().getStatementCount();
+    }
+
     ////////////////////////////////////////////////////////////////////////
     // Query Cancellation Section
     ////////////////////////////////////////////////////////////////////////
@@ -663,7 +656,7 @@ public class BlazeGraphEmbedded extends BlazeGraph {
      * 
      * @param The connection.
      */
-    protected UUID setupQuery(final BigdataSailRepositoryConnection cxn,
+    protected UUID setupQuery(
             final SailQuery query, final ASTContainer astContainer,
             final QueryType queryType, final String extId) {
 
