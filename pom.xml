@@ -140,8 +140,8 @@
     </dependency>
     <dependency>
       <groupId>org.openrdf.sesame</groupId>
-      <artifactId>openrdf-sesame</artifactId>
-      <version>2.7.11-onejar</version>
+      <artifactId>sesame-runtime</artifactId>
+      <version>2.7.11</version>
     </dependency>
     <dependency>
       <groupId>org.apache.lucene</groupId>
