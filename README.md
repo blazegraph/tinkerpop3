@@ -27,6 +27,8 @@ Then select "File-Import-Existing Projects Into Workspace" from the Eclipse menu
 
 Take a look at the sample code provided in XXX for an example of how to get started writing your TP3 application with Blazegraph.
 
+Tinkerpop3 is setup to build with Jenkins CI for PRs and the master branch.
+
 ## Blazegraph/TP3 Data Model
 
 It's important to understand how Blazegraph organizes property graph data as RDF.  Blazegraph uses the RDF* framework, which is an extension to RDF that provides for an easier RDF reification syntax.  Reification is a means of using an RDF statement as an RDF value in other statements.  The RDF* syntax for an RDF "statement as a value" is as follows:
