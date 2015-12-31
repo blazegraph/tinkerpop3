@@ -186,9 +186,9 @@ Here is how the Tinkerpop3 "Crew" dataset looks when loaded into Blazegraph.  Hu
 
 Currently BlazeGraphEmbedded is the only concrete implementation of the Blazegraph Tinkerpop3 API.  BlazeGraphEmbedded is backed by an embedded (same JVM) instance of Blazegraph.  This puts the enterprise features of Blazegraph (high-availability, scale-out, etc.) out of reach for the 1.0 version of the TP3 integration, since those features are accessed via Blazegraph's client/server API.  A TP3 integration with the client/server version of Blazegraph is reserved for a future blazegraph-tinkerpop release.
 
-Blazegraph's concurrency model is MVCC, which more or less lines up with Tinkerpop's Transaction model.  When you open a BlazeGraphEmbedded instance, you are working with the unisolated (writer) view of the database.  This view supports Tinkerpo Transactions, and reads are done against the unisolated connection, so uncommitted changes will be visible.  A BlazeGraphEmbedded can be shared across multiple threads, but only one thread can have a Tinkerpop Transaction open at a time (other threads will be blocked until the transaction is closed).  A TP3 Transaction is automatically opened on any read or write operation, and automatically closed on any commit or rollback operation.  The Transaction can also be closed manually, which you will need to do after read operations to unblock other waiting threads.
+Blazegraph's concurrency model is MVCC, which more or less lines up with Tinkerpop's Transaction model.  When you open a BlazeGraphEmbedded instance, you are working with the unisolated (writer) view of the database.  This view supports Tinkerpop Transactions, and reads are done against the unisolated connection, so uncommitted changes will be visible.  A BlazeGraphEmbedded can be shared across multiple threads, but only one thread can have a Tinkerpop Transaction open at a time (other threads will be blocked until the transaction is closed).  A TP3 Transaction is automatically opened on any read or write operation, and automatically closed on any commit or rollback operation.  The Transaction can also be closed manually, which you will need to do after read operations to unblock other waiting threads.
 
-BlazegraphGraphEmbedded is thus single threaded, but Blazegraph/MVCC does allows for many concurrent readers in parallel with both the writer and each other.  This is possible by opening a read-only view that will read against the last commit point.  The read-only view can be be accessed in parallel to the writer without any of the restrictions described above.  To get a read-only snapshot, use the following pattern:
+BlazegraphGraphEmbedded's database operations are thus single-threaded, but Blazegraph/MVCC allows for many concurrent readers in parallel with both the single writer and other readers.  This is possible by opening a read-only view that will read against the last commit point on the database.  The read-only view can be be accessed in parallel to the writer without any of the restrictions described above.  To get a read-only snapshot, use the following pattern:
 
 	final BlazeGraphEmbedded unisolated = ...;
 	final BlazeGraphReadOnly readOnly = unisolated.readOnlyConnection();
@@ -198,7 +198,7 @@ BlazegraphGraphEmbedded is thus single threaded, but Blazegraph/MVCC does allows
 		readOnly.close();
 	}
 
-BlazeGraphReadOnly extends BlazeGraphEmbedded and thus offers all the same operations, except write operations will not be permitted (BlazeGraphReadOnly.tx() will throw an exception).
+BlazeGraphReadOnly extends BlazeGraphEmbedded and thus offers all the same operations, except write operations will not be permitted (BlazeGraphReadOnly.tx() will throw an exception).  You can open as many read-only views as you like, but we recommend you use a connection pool so as not to overtax system resources.  Applications should be written with the one-writer many-readers paradigm front of mind.
 
 **Important: Make sure to close the read-only view as soon as you are done with it.**
 
