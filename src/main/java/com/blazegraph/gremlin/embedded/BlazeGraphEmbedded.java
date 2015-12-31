@@ -193,7 +193,7 @@ public class BlazeGraphEmbedded extends BlazeGraph {
     }
     
     @Override
-    public Transaction tx() {
+    public BlazeTransaction tx() {
         if (closed) throw new IllegalStateException();
         
         return tx;
@@ -276,6 +276,13 @@ public class BlazeGraphEmbedded extends BlazeGraph {
         
         public BigdataSailRepositoryConnection cxn() {
             return tlTx.get();
+        }
+        
+        public void flush() {
+            final BigdataSailRepositoryConnection cxn = tlTx.get();
+            if (cxn != null) {
+                Code.wrapThrow(() -> cxn.flush());
+            }
         }
         
     }
@@ -480,6 +487,12 @@ public class BlazeGraphEmbedded extends BlazeGraph {
         if (closed) throw new IllegalStateException();
         
         tx().rollback();
+    }
+
+    public void flush() {
+        if (closed) throw new IllegalStateException();
+        
+        tx().flush();
     }
 
     protected volatile boolean closed = false;
