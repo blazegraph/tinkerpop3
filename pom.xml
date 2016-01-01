@@ -38,7 +38,8 @@
          <version>1.0-beta-6</version>
       </extension>
     </extensions>
-    <distributionManagement>
+  </build>
+  <distributionManagement>
         <repository>
             <id>bigdata.releases</id>
             <name>bigdata(R) releases</name>
@@ -50,8 +51,7 @@
             <url>scpexe://www.systap.com/srv/www/htdocs/systap.com/maven/snapshots</url>
             <uniqueVersion>true</uniqueVersion>
         </snapshotRepository>
-    </distributionManagement>
-  </build>
+  </distributionManagement>
   <repositories>
     <repository>
       <id>bigdata.releases</id>
