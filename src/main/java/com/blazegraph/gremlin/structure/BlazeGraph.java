@@ -234,6 +234,13 @@ public abstract class BlazeGraph implements Graph {
      */
     protected final Transforms transforms;
     
+    /**
+     * When this is set to true, disables any implicit reads/removes that are
+     * interleaved with the process of adding new data. This means no checking
+     * on vertex and edge id reuse and no cleaning of old property values
+     * (applies to all properties on Edges and VertexProperties and 
+     * Cardinality.single properties on Vertices).
+     */
     private transient volatile boolean bulkLoad = false;
     
     /**
@@ -278,16 +285,36 @@ public abstract class BlazeGraph implements Graph {
      */
     protected abstract RepositoryConnection cxn();
     
+    /**
+     * Returns whether the graph is in bulkLoad (true) or incremental update
+     * (false) mode.  Incremental update is the default mode
+     * 
+     * @see {@link #setBulkLoad(boolean)}
+     */
     public boolean isBulkLoad() {
         return bulkLoad;
     }
     
+    /**
+     * When this is set to true, disables any implicit reads/removes that are
+     * interleaved with the process of adding new data. This means no checking
+     * on vertex and edge id reuse and no cleaning of old property values
+     * (applies to all properties on Edges and VertexProperties and
+     * Cardinality.single properties on Vertices). This results in considerably
+     * greater write throughput and is suitable for loading a new data set into
+     * an empty graph or loading data that does overlap with any data already in
+     * an existing graph.
+     * <p/>
+     * Default is incremental update (bulkLoad = false).
+     */
     public void setBulkLoad(final boolean bulkLoad) {
         this.bulkLoad = bulkLoad;
     }
     
     /**
      * Execute the supplied code fragment in bulk load mode.
+     * 
+     * @see {@link #setBulkLoad(boolean)}
      */
     public void bulkLoad(final Code code) {
         if (isBulkLoad()) {
