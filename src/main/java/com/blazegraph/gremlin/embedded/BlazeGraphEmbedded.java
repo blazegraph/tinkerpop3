@@ -850,8 +850,8 @@ public class BlazeGraphEmbedded extends BlazeGraph {
      */
     private void logQuery(final String queryStr) {
         sparqlLog.info(() -> "query:\n"+ 
-                (queryStr.length() <= SPARQL_LOG_MAX ? 
-                        queryStr : queryStr.substring(0, SPARQL_LOG_MAX)+" ..."));
+                (queryStr.length() <= sparqlLogMax ? 
+                        queryStr : queryStr.substring(0, sparqlLogMax)+" ..."));
     }
 
     /**

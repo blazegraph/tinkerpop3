@@ -128,11 +128,6 @@ public abstract class BlazeGraph implements Graph {
     protected final transient static LambdaLogger sparqlLog = LambdaLogger.getLogger(BlazeGraph.class.getName() + ".SparqlLog");
     
     /**
-     * Maximum number of chars to print through the SparqlLogger.
-     */
-    public static final int SPARQL_LOG_MAX = 10000;
-    
-    /**
      * Options that can be specified in the graph configuration.
      * 
      * @author mikepersonick
@@ -159,7 +154,17 @@ public abstract class BlazeGraph implements Graph {
          * future in cases of clock skew). 
          */
         String LIST_INDEX_FLOOR = BlazeGraph.class.getName() + ".listIndexFloor";
+
+        /**
+         * Maximum number of chars to print through the SparqlLogger.
+         */
+        String SPARQL_LOG_MAX = BlazeGraph.class.getName() + ".sparqlLogMax";
         
+        /**
+         * Defaults to 10k.
+         */
+        int DEFAULT_SPARQL_LOG_MAX = 10000;
+
     }
     
     /**
@@ -198,6 +203,9 @@ public abstract class BlazeGraph implements Graph {
      */
     protected final Configuration config;
     
+    /**
+     * Sparql query string generator.
+     */
     private final SparqlGenerator sparql;
     
     /**
@@ -235,6 +243,12 @@ public abstract class BlazeGraph implements Graph {
     protected final Transforms transforms;
     
     /**
+     * Maximum number of chars to print through the SparqlLogger. Defaults to 
+     * 10k.
+     */
+    protected final int sparqlLogMax;
+    
+    /**
      * When this is set to true, disables any implicit reads/removes that are
      * interleaved with the process of adding new data. This means no checking
      * on vertex and edge id reuse and no cleaning of old property values
@@ -258,6 +272,9 @@ public abstract class BlazeGraph implements Graph {
         this.vpIdFactory = new AtomicLong(listIndexFloor);
         
         this.maxQueryTime = config.getInt(Options.MAX_QUERY_TIME, 0);
+        
+        this.sparqlLogMax = config.getInt(Options.SPARQL_LOG_MAX, 
+                                          Options.DEFAULT_SPARQL_LOG_MAX);
         
         this.LABEL = vf.label();
         this.VALUE = vf.value();
