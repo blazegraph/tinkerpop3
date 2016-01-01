@@ -10,6 +10,7 @@ Some interesting features of the Blazegraph/TP3 implementation include:
 * History API - capture full or partial history of edits to the graph.
 * Built-in full text index and search API to find graph elements.
 * Automatic SPARQL to PG translation - run a SPARQL query and get your results back in property graph form.
+* Query management API - list and cancel running Sparql queries.
 * Bulk Load API for fast setup of new graphs.
 * Support for MVCC concurrency model for high-concurrency read access.
 

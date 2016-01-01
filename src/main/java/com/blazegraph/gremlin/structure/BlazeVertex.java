@@ -78,20 +78,9 @@ public class BlazeVertex extends AbstractBlazeElement implements Vertex, BlazeEl
         if (ElementHelper.getIdValue(kvs).isPresent())
             throw Vertex.Exceptions.userSuppliedIdsNotSupported();
         
-        final BlazeVertexProperty<V> prop = graph.vertexProperty(this, key, val, cardinality);
-        ElementHelper.attachProperties(prop, kvs);
-        return prop;
+        return graph.vertexProperty(this, cardinality, key, val, kvs);
     }
     
-//    private boolean clean(final Cardinality cardinality) {
-//        switch(cardinality) {
-//        case single: return true; 
-//        case set: 
-//        case list: return false;
-//        default: throw new IllegalArgumentException("Cardinality not supported: " + cardinality);
-//        }
-//    }
-
     @Override
     public <V> CloseableIterator<VertexProperty<V>> properties(String... keys) {
         return graph.properties(this, keys);

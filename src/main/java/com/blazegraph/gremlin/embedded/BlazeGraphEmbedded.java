@@ -171,7 +171,7 @@ public class BlazeGraphEmbedded extends BlazeGraph {
          * Grab the last commit time and also check for clock skew.
          */
         final long lastCommitTime = lastCommitTime(repo);
-        config.setProperty(BlazeGraph.Options.LAST_COMMIT_TIME, lastCommitTime);
+        config.setProperty(BlazeGraph.Options.LIST_INDEX_FLOOR, lastCommitTime);
 
         return new BlazeGraphEmbedded(repo, config);
     }
@@ -522,7 +522,7 @@ public class BlazeGraphEmbedded extends BlazeGraph {
                 return Optional.empty();
             }
             
-            return transforms.graphAtom.apply(record.getStatement())
+            return graphAtomTransform().apply(record.getStatement())
                         .map(atom -> new BlazeGraphEdit(action, atom));
             
         }
@@ -732,8 +732,9 @@ public class BlazeGraphEmbedded extends BlazeGraph {
     }
 
     /**
-     * Internal Sparql select method.  Prepare a Sparql select query, turn
-     * Sesame iteration into a stream of binding sets using {@link GraphStreamer}.
+     * {@inheritDoc}
+     * 
+     * Logs the query at INFO and logs the optimized AST at TRACE.
      */
     @Override
     protected Stream<BindingSet> _select( 
@@ -753,7 +754,7 @@ public class BlazeGraphEmbedded extends BlazeGraph {
              * Result is closed automatically by GraphStreamer.
              */
             final TupleQueryResult result = query.evaluate();
-            final Optional<Code> onClose = 
+            final Optional<Runnable> onClose = 
                     Optional.of(() -> finalizeQuery(queryId));
             return new GraphStreamer<>(result, onClose).stream();
         });
@@ -761,8 +762,9 @@ public class BlazeGraphEmbedded extends BlazeGraph {
     }
     
     /**
-     * Internal Sparql project method.  Prepare a Sparql graph query, turn
-     * Sesame iteration into a stream of statements using {@link GraphStreamer}.
+     * {@inheritDoc}
+     * 
+     * Logs the query at INFO and logs the optimized AST at TRACE.
      */
     @Override
     protected Stream<Statement> _project( 
@@ -782,7 +784,7 @@ public class BlazeGraphEmbedded extends BlazeGraph {
              * Result is closed automatically by GraphStreamer.
              */
             final GraphQueryResult result = query.evaluate();
-            final Optional<Code> onClose = 
+            final Optional<Runnable> onClose = 
                     Optional.of(() -> finalizeQuery(queryId));
             return new GraphStreamer<>(result, onClose).stream();
         });
@@ -790,7 +792,9 @@ public class BlazeGraphEmbedded extends BlazeGraph {
     }
     
     /**
-     * Internal Sparql ask method.  Prepare a Sparql ask query and return result.
+     * {@inheritDoc}
+     * 
+     * Logs the query at INFO.
      */
     @Override
     protected boolean _ask( 
@@ -816,7 +820,9 @@ public class BlazeGraphEmbedded extends BlazeGraph {
     }
     
     /**
-     * Internal Sparql update method.  Prepare a Sparql Update and execute.
+     * {@inheritDoc}
+     * 
+     * Logs the query at INFO.
      */
     @Override
     protected void _update( 
@@ -1115,12 +1121,4 @@ public class BlazeGraphEmbedded extends BlazeGraph {
         repo.getSail().__tearDownUnitTest();
     }
     
-    private static class Exceptions {
-
-        public static IllegalStateException alreadyClosed() {
-            return new IllegalStateException("Graph has already been closed");
-        }
-        
-    }
-
 }
