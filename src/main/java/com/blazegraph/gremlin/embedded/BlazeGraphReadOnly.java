@@ -43,8 +43,17 @@ import com.blazegraph.gremlin.util.Code;
  */
 public class BlazeGraphReadOnly extends BlazeGraphEmbedded {
 
+    /**
+     * Unlike the unisolated version (superclass), the read-only version
+     * holds the read connection open for the duration of its lifespan, until
+     * close() is called.
+     */
     private final BigdataSailRepositoryConnection cxn;
     
+    /**
+     * Never publicly instantiated - only by another {@link BlazeGraphEmbedded} 
+     * instance.
+     */
     BlazeGraphReadOnly(final BigdataSailRepository repo,
             final BigdataSailRepositoryConnection cxn,
             final Configuration config) {
@@ -53,11 +62,17 @@ public class BlazeGraphReadOnly extends BlazeGraphEmbedded {
         this.cxn = cxn;
     }
     
+    /**
+     * Write operations not supported by this class.
+     */
     @Override
     public BlazeTransaction tx() {
         throw new UnsupportedOperationException("Transactions not allowed on read-only view");
     }
     
+    /**
+     * Return the read-only SAIL connection.
+     */
     @Override
     public BigdataSailRepositoryConnection cxn() {
         if (closed) throw new IllegalStateException();
@@ -65,6 +80,9 @@ public class BlazeGraphReadOnly extends BlazeGraphEmbedded {
         return cxn;
     }
     
+    /**
+     * Close the read-only SAIL connection.
+     */
     @Override
     public synchronized void close() {
         if (closed)

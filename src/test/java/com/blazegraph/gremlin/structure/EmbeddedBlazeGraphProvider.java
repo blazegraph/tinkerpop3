@@ -37,6 +37,11 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
 import com.bigdata.rdf.sail.BigdataSailRepository;
 import com.blazegraph.gremlin.embedded.BlazeGraphEmbedded;
 
+/**
+ * Tinkerpop GraphProvider for the TP3 test suites.
+ * 
+ * @author mikepersonick
+ */
 public class EmbeddedBlazeGraphProvider extends AbstractGraphProvider {
 
     public static interface Options {
@@ -60,7 +65,7 @@ public class EmbeddedBlazeGraphProvider extends AbstractGraphProvider {
         }
     }
 
-    public static final Set<Class> IMPLEMENTATIONS = new HashSet<Class>() {{
+    private static final Set<Class> IMPLEMENTATIONS = new HashSet<Class>() {{
         add(BlazeEdge.class);
         add(BlazeGraph.class);
         add(BlazeProperty.class);
@@ -95,8 +100,6 @@ public class EmbeddedBlazeGraphProvider extends AbstractGraphProvider {
     public static BlazeGraphEmbedded open(final Configuration config) {
         final String name = config.getString(Options.REPOSITORY_NAME);
         final BigdataSailRepository repo = getRepository(name);
-//        final BlazeGraphManager mgr = new BlazeGraphManager(repo, config);
-//        return mgr.unisolatedConnection();
         return BlazeGraphEmbedded.open(repo, config);
     }
     

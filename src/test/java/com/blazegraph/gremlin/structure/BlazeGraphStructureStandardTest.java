@@ -27,6 +27,12 @@ import org.junit.runner.RunWith;
 
 import junit.framework.TestCase;
 
+/**
+ * Run the StructureModifiedSuite, a slightly modified version of Tinkerpop's
+ * StructureStandardSuite.
+ *  
+ * @author mikepersonick
+ */
 @RunWith(StructureModifiedSuite.class)
 @GraphProviderClass(provider = EmbeddedBlazeGraphProvider.class, graph = BlazeGraph.class)
 public class BlazeGraphStructureStandardTest extends TestCase {}

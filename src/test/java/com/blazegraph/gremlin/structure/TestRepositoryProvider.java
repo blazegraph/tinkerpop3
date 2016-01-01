@@ -8,6 +8,11 @@ import com.bigdata.rdf.sail.BigdataSailRepository;
 import com.blazegraph.gremlin.embedded.BasicRepositoryProvider;
 import com.blazegraph.gremlin.util.Code;
 
+/**
+ * Extension of BasicRepositoryProvider for test cases.
+ * 
+ * @author mikepersonick
+ */
 public class TestRepositoryProvider extends BasicRepositoryProvider {
 
     /**

@@ -49,6 +49,10 @@ public abstract class TestBlazeGraph extends TestCase {
     
     protected BlazeGraphEmbedded graph = null;
     
+    /**
+     * Subclasses can override BasicRepositoryProvider defaults for Blaze
+     * properties.
+     */
     protected Map<String,String> overrides() {
         return Collections.emptyMap();
     }
@@ -56,10 +60,7 @@ public abstract class TestBlazeGraph extends TestCase {
     @Override
     public void setUp() throws Exception {
         final BigdataSailRepository repo = TestRepositoryProvider.open(overrides()); 
-        final Configuration config = new BaseConfiguration();
-//        this.mgr = new BlazeGraphManager(repo, config);
-//        this.graph = mgr.unisolatedConnection();
-        this.graph = BlazeGraphEmbedded.open(repo, config);
+        this.graph = BlazeGraphEmbedded.open(repo);
     }
     
     @Override

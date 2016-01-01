@@ -34,6 +34,7 @@ import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.structure.Transaction;
 import org.apache.tinkerpop.gremlin.structure.util.AbstractThreadLocalTransaction;
@@ -147,6 +148,19 @@ public class BlazeGraphEmbedded extends BlazeGraph {
          * TODO FIXME Make this a configurable property.
          */
         AST2BOpUpdate.AUTO_COMMIT = false;
+    }
+
+    /**
+     * Open a BlazeGraphEmbedded (unisolated) instance wrapping the provided
+     * SAIL repository with no additional configuration options.
+     * 
+     * @param repo
+     *          an open and initialized repository
+     * @return
+     *          BlazeGraphEmbedded instance
+     */
+    public static BlazeGraphEmbedded open(final BigdataSailRepository repo) {
+        return open(repo, new BaseConfiguration());
     }
     
     /**
