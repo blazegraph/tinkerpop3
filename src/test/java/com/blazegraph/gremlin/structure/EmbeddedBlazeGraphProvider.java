@@ -107,9 +107,9 @@ public class EmbeddedBlazeGraphProvider extends AbstractGraphProvider {
         if (repos.containsKey(name)) {
             journal = repos.get(name);
         } else {
-            repos.put(name, journal = RepositoryProvider.journal());
+            repos.put(name, journal = TestRepositoryProvider.tmpJournal());
         }
-        return RepositoryProvider.open(journal);
+        return TestRepositoryProvider.open(journal);
     }
 
 }

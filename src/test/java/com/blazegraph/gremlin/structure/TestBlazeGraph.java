@@ -55,7 +55,7 @@ public abstract class TestBlazeGraph extends TestCase {
     
     @Override
     public void setUp() throws Exception {
-        final BigdataSailRepository repo = RepositoryProvider.open(overrides()); 
+        final BigdataSailRepository repo = TestRepositoryProvider.open(overrides()); 
         final Configuration config = new BaseConfiguration();
 //        this.mgr = new BlazeGraphManager(repo, config);
 //        this.graph = mgr.unisolatedConnection();

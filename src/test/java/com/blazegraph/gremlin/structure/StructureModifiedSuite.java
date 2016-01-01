@@ -24,7 +24,6 @@ package com.blazegraph.gremlin.structure;
 
 import static org.junit.Assert.assertEquals;
 
-import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.AbstractGremlinSuite;
 import org.apache.tinkerpop.gremlin.AbstractGremlinTest;
 import org.apache.tinkerpop.gremlin.ExceptionCoverage;
@@ -62,16 +61,20 @@ import org.apache.tinkerpop.gremlin.structure.util.reference.ReferenceGraphTest;
 import org.apache.tinkerpop.gremlin.structure.util.reference.ReferenceVertexPropertyTest;
 import org.apache.tinkerpop.gremlin.structure.util.reference.ReferenceVertexTest;
 import org.apache.tinkerpop.gremlin.structure.util.star.StarGraphTest;
-import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 import org.junit.Test;
 import org.junit.experimental.runners.Enclosed;
 import org.junit.runner.RunWith;
 import org.junit.runners.model.InitializationError;
 import org.junit.runners.model.RunnerBuilder;
 
-import com.blazegraph.gremlin.embedded.BlazeGraphEmbedded;
-
-public class StructureStandardSuite extends AbstractGremlinSuite {
+/**
+ * A modified version of StructureStandardSuite that either does not run or
+ * fixes certain tests that are simply incompatible with the Blaze engine.
+ * Tried to keep this as close to the standard suite as possible.
+ * 
+ * @author mikepersonick
+ */
+public class StructureModifiedSuite extends AbstractGremlinSuite {
 
     
     /**
@@ -111,7 +114,7 @@ public class StructureStandardSuite extends AbstractGremlinSuite {
             
     };
 
-    public StructureStandardSuite(final Class<?> klass, final RunnerBuilder builder) throws InitializationError {
+    public StructureModifiedSuite(final Class<?> klass, final RunnerBuilder builder) throws InitializationError {
         super(klass, builder, allTests, null, false, TraversalEngine.Type.STANDARD);
     }
     
@@ -253,23 +256,17 @@ public class StructureStandardSuite extends AbstractGremlinSuite {
 
     /**
      * These three tests attempt to access the unisolated connection from
-     * another thread.  
+     * multiple threads and just will not work.
      * 
      * @author mikepersonick
      */
     public static class ModifiedTransactionTest extends TransactionTest {
         
-        public void shouldAllowReferenceOfVertexIdOutsideOfOriginalThreadManual() throws Exception {
-//            super.shouldAllowReferenceOfVertexIdOutsideOfOriginalThreadManual();
-        }
+        public void shouldAllowReferenceOfVertexIdOutsideOfOriginalThreadManual() throws Exception { }
         
-        public void shouldAllowReferenceOfEdgeIdOutsideOfOriginalThreadManual() throws Exception {
-//            super.shouldAllowReferenceOfEdgeIdOutsideOfOriginalThreadManual();
-        }
+        public void shouldAllowReferenceOfEdgeIdOutsideOfOriginalThreadManual() throws Exception { }
         
-        public void shouldSupportTransactionIsolationCommitCheck() throws Exception {
-//            super.shouldSupportTransactionIsolationCommitCheck();
-        }
+        public void shouldSupportTransactionIsolationCommitCheck() throws Exception { }
         
     }
         

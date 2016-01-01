@@ -1156,14 +1156,6 @@ public abstract class BlazeGraph implements Graph {
     public abstract void cancel(UUID queryId);
 
     /**
-     * Kill a running query specified by the UUID String.
-     * Do nothing if the query has completed.
-     * 
-     * @param String uuid
-     */
-    public abstract void cancel(String uuid);
-
-    /**
      * Kill a running query specified by the RunningQuery object. Do nothing if
      * the query has completed.
      * 

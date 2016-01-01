@@ -22,13 +22,7 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 package com.blazegraph.gremlin.structure;
 
-import static java.util.stream.Collectors.toList;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
@@ -37,18 +31,10 @@ import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty.Cardinality;
-import org.apache.tinkerpop.gremlin.util.iterator.IteratorUtils;
 import org.openrdf.model.Literal;
-import org.openrdf.model.Resource;
 import org.openrdf.model.URI;
 
-import com.bigdata.rdf.sail.BigdataSailRepositoryConnection;
-import com.blazegraph.gremlin.embedded.BlazeGraphEmbedded;
-import com.blazegraph.gremlin.util.CloseableIterator;
 import com.blazegraph.gremlin.util.LambdaLogger;
-import com.blazegraph.gremlin.util.Streams;
-
-import junit.framework.TestCase;
 
 public class TestBasicOperations extends TestBlazeGraph {
 
