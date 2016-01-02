@@ -27,6 +27,11 @@ import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.atomic.AtomicReference;
 
+/**
+ * Safe lazy-initialization pattern for Java 8.
+ * 
+ * @author mikepersonick
+ */
 public class Memoizer<V> {
 
     private final AtomicReference<Future<V>> cache = new AtomicReference<>(null);

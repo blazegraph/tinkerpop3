@@ -35,11 +35,7 @@ import org.apache.log4j.spi.LoggingEvent;
 /**
  * Wrap conditional logging using Java 8 lambdas.
  * 
- * To use this functionality you must set up the factory in log4j.properties:
- *  
- * log4j.loggerFactory=px.avro.util.LambdaLoggerFactory
- * 
- * Then request a LambdaLogger instead of a normal Logger:
+ * To use this functionality, simply request a LambdaLogger instead of a normal Logger:
  * 
  * LambdaLogger log = LambdaLogger.getLogger(Foo.class)
  * 

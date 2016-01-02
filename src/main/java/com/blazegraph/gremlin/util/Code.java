@@ -102,57 +102,57 @@ public interface Code {
         }
     } 
     
-//    /**
-//     * Execute the callable without trapping checked exceptions. Use instead
-//     * of a wrap/re-throw pattern inside lambdas.
-//     */
-//    public static <T> T unchecked(Callable<T> callable) {
-//        try {
-//            return callable.call();
-//        } catch (Exception e) {
-//            return sneakyThrow(e);
-//        }
-//    }
-//
-//    /**
-//     * Execute the code block without trapping checked exceptions. Use instead
-//     * of a wrap/re-throw pattern inside lambdas.
-//     */
-//    public static void unchecked(Code code) {
-//        try {
-//            code.run();
-//        } catch (Exception e) {
-//            sneakyThrow(e);
-//        }
-//    }
-//
-//    /**
-//     * Execute the callable without trapping checked exceptions. Use instead
-//     * of a wrap/re-throw pattern inside lambdas.
-//     */
-//    public static <T> T unchecked(Callable<T> callable, Code _finally) {
-//        try {
-//            return callable.call();
-//        } catch (Exception e) {
-//            return sneakyThrow(e);
-//        } finally {
-//            unchecked(_finally);
-//        }
-//    }
-//
-//    /**
-//     * Execute the code block without trapping checked exceptions. Use instead
-//     * of a wrap/re-throw pattern inside lambdas.
-//     */
-//    public static void unchecked(Code code, Code _finally) {
-//        try {
-//            code.run();
-//        } catch (Exception e) {
-//            sneakyThrow(e);
-//        } finally {
-//            unchecked(_finally);
-//        }
-//    }
+    /**
+     * Execute the callable without trapping checked exceptions. Use instead
+     * of a wrap/re-throw pattern inside lambdas.
+     */
+    public static <T> T unchecked(Callable<T> callable) {
+        try {
+            return callable.call();
+        } catch (Exception e) {
+            return sneakyThrow(e);
+        }
+    }
+
+    /**
+     * Execute the code block without trapping checked exceptions. Use instead
+     * of a wrap/re-throw pattern inside lambdas.
+     */
+    public static void unchecked(Code code) {
+        try {
+            code.run();
+        } catch (Exception e) {
+            sneakyThrow(e);
+        }
+    }
+
+    /**
+     * Execute the callable without trapping checked exceptions. Use instead
+     * of a wrap/re-throw pattern inside lambdas.
+     */
+    public static <T> T unchecked(Callable<T> callable, Code _finally) {
+        try {
+            return callable.call();
+        } catch (Exception e) {
+            return sneakyThrow(e);
+        } finally {
+            unchecked(_finally);
+        }
+    }
+
+    /**
+     * Execute the code block without trapping checked exceptions. Use instead
+     * of a wrap/re-throw pattern inside lambdas.
+     */
+    public static void unchecked(Code code, Code _finally) {
+        try {
+            code.run();
+        } catch (Exception e) {
+            sneakyThrow(e);
+        } finally {
+            unchecked(_finally);
+        }
+    }
 
     /**
      * Use type erasure to throw checked exceptions without declaring them,

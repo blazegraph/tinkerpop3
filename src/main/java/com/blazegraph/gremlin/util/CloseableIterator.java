@@ -30,6 +30,12 @@ import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
+/**
+ * Interface that combines Iterator and AutoCloseable.  Why does Java 8 not
+ * support this natively?!?
+ * 
+ * @author mikepersonick
+ */
 public interface CloseableIterator<E> extends Iterator<E>, AutoCloseable {
     
     /**
@@ -38,6 +44,9 @@ public interface CloseableIterator<E> extends Iterator<E>, AutoCloseable {
     @Override
     void close();
     
+    /**
+     * Perform some action on each remaining element and then close the itertor.
+     */
     @Override
     default void forEachRemaining(Consumer<? super E> action) {
         try {
@@ -55,7 +64,7 @@ public interface CloseableIterator<E> extends Iterator<E>, AutoCloseable {
     }
     
     /**
-     * Collect the elements into a list.  This will close the iterator.
+     * Collect the elements into a list. This will close the iterator.
      */
     default List<E> collect() {
         try (Stream<E> s = stream()) {
@@ -64,17 +73,12 @@ public interface CloseableIterator<E> extends Iterator<E>, AutoCloseable {
     }
     
     /**
-     * Count the elements.  This will close the iterator.
+     * Count the elements. This will close the iterator.
      */
     default long count() {
         try (Stream<E> s = stream()) {
             return s.count();
         }
-//        try {
-//            return Streams.of(this).count();
-//        } finally {
-//            close();
-//        }
     }
     
     /**
@@ -86,12 +90,20 @@ public interface CloseableIterator<E> extends Iterator<E>, AutoCloseable {
         }
     }
     
+    /**
+     * Construct an instance from a stream using stream.close() as the close
+     * behavior for the iterator.
+     */
     public static <T> CloseableIterator<T> of(final Stream<T> stream) {
         return of(stream.iterator(), () -> stream.close());
     }
     
+    /**
+     * Construct an instance from the supplied iterator and the supplied
+     * onClose behavior.
+     */
     public static <T> 
-    CloseableIterator<T> of(final Iterator<T> it, final Runnable close) {
+    CloseableIterator<T> of(final Iterator<T> it, final Runnable onClose) {
         return new CloseableIterator<T>() {
 
             @Override
@@ -111,7 +123,7 @@ public interface CloseableIterator<E> extends Iterator<E>, AutoCloseable {
             
             @Override
             public void close() { 
-                close.run(); 
+                onClose.run(); 
             }
             
             @Override
@@ -122,6 +134,9 @@ public interface CloseableIterator<E> extends Iterator<E>, AutoCloseable {
         };
     }
     
+    /**
+     * Empty instance.
+     */
     public static <T> CloseableIterator<T> emptyIterator() {
         final Iterator<T> it = Collections.<T>emptyIterator();
         return of(it, () -> {});
