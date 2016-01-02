@@ -27,7 +27,6 @@ import java.util.NoSuchElementException;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.apache.tinkerpop.gremlin.structure.util.empty.EmptyProperty;
 import org.openrdf.model.Literal;
-import org.openrdf.model.Resource;
 import org.openrdf.model.URI;
 
 /**
@@ -47,17 +46,12 @@ public class EmptyBlazeProperty<V> extends BlazeProperty<V> {
     }
 
     @Override
-    public Resource s() {
+    public URI rdfKey() {
         throw Exceptions.propertyDoesNotExist();
     }
 
     @Override
-    public URI p() {
-        throw Exceptions.propertyDoesNotExist();
-    }
-
-    @Override
-    public Literal o() {
+    public Literal rdfValue() {
         throw Exceptions.propertyDoesNotExist();
     }
 
@@ -83,7 +77,6 @@ public class EmptyBlazeProperty<V> extends BlazeProperty<V> {
 
     @Override
     public void remove() {
-
     }
 
     @Override

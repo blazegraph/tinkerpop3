@@ -22,7 +22,10 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 package com.blazegraph.gremlin.structure;
 
+import static java.util.stream.Collectors.toList;
+
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
@@ -35,6 +38,7 @@ import org.openrdf.model.Literal;
 import org.openrdf.model.URI;
 
 import com.blazegraph.gremlin.util.LambdaLogger;
+import com.blazegraph.gremlin.util.Streams;
 
 public class TestBasicOperations extends TestBlazeGraph {
 
@@ -178,7 +182,9 @@ public class TestBasicOperations extends TestBlazeGraph {
         
         {
             final List<BlazeVertex> vertices = 
-                    collect(x.vertices(Direction.BOTH), BlazeVertex.class);
+                    Streams.of(x.vertices(Direction.BOTH))
+                           .map(BlazeVertex.class::cast)
+                           .collect(toList());
             log.debug(() -> vertices.stream());
             assertEquals(2, vertices.size());
             assertTrue(vertices.contains(a));
@@ -187,7 +193,9 @@ public class TestBasicOperations extends TestBlazeGraph {
         
         {
             final List<BlazeVertex> vertices = 
-                    collect(x.vertices(Direction.OUT), BlazeVertex.class);
+                    Streams.of(x.vertices(Direction.OUT))
+                    .map(BlazeVertex.class::cast)
+                    .collect(toList());
             log.debug(() -> vertices.stream());
             assertEquals(1, vertices.size());
             assertTrue(vertices.contains(a));
@@ -195,7 +203,9 @@ public class TestBasicOperations extends TestBlazeGraph {
         
         {
             final List<BlazeVertex> vertices = 
-                    collect(x.vertices(Direction.IN), BlazeVertex.class);
+                    Streams.of(x.vertices(Direction.IN))
+                    .map(BlazeVertex.class::cast)
+                    .collect(toList());
             log.debug(() -> vertices.stream());
             assertEquals(1, vertices.size());
             assertTrue(vertices.contains(b));

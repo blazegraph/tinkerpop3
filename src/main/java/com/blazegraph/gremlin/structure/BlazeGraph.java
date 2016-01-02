@@ -587,7 +587,7 @@ public abstract class BlazeGraph implements Graph {
     <V> void remove(final BlazeProperty<V> prop) {
         final RepositoryConnection cxn = cxn();
         Code.wrapThrow(() -> {
-            cxn.remove(prop.s(), prop.p(), prop.o());
+            cxn.remove(prop.element().rdfId(), prop.rdfKey(), prop.rdfValue());
         });
     }
     

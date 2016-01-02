@@ -28,27 +28,45 @@ import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.openrdf.model.Literal;
-import org.openrdf.model.Resource;
 import org.openrdf.model.URI;
 
+/**
+ * Concrete property implementation for Blazegraph.  BlazeProperties are
+ * attached to {@link BlazeEdge}s and {@link BlazeVertexProperty}s 
+ * (meta-properties).
+ * 
+ * @author mikepersonick
+ */
 public class BlazeProperty<V> implements Property<V> {
 
+    /**
+     * {@link BlazeGraph} instance this property belongs to.
+     */
     protected final BlazeGraph graph;
-    
+
+    /**
+     * The {@link BlazeValueFactory} provided by the graph for round-tripping
+     * values.
+     */
     protected final BlazeValueFactory vf;
     
+    /**
+     * The {@link BlazeElement} this property belongs to.
+     */
     protected final BlazeElement element;
     
-//    protected final BigdataResource subject;
-    
+    /**
+     * RDF representation of the property key.
+     */
     protected final URI key;
     
+    /**
+     * RDF representation of the property value.
+     */
     protected final Literal val;
     
-//    private transient volatile boolean removed = false;
-    
     /**
-     * Solely for EmptyBlazeProperty
+     * Solely for {@link EmptyBlazeProperty}.
      */
     protected BlazeProperty() {
         this.graph = null;
@@ -58,12 +76,11 @@ public class BlazeProperty<V> implements Property<V> {
         this.val = null;
     }
     
-    public BlazeProperty(final BlazeGraph graph, final BlazeElement element,
-            /*final BigdataResource subject,*/ final URI key, final Literal val) {
+    BlazeProperty(final BlazeGraph graph, final BlazeElement element,
+            final URI key, final Literal val) {
         this.graph = graph;
         this.vf = graph.valueFactory();
         this.element = element;
-//        this.subject = subject;
         this.key = key;
         this.val = val;
     }
@@ -72,58 +89,81 @@ public class BlazeProperty<V> implements Property<V> {
         return graph;
     }
     
-    public Resource s() {
-        return element.rdfId();
-    }
-    
-    public URI p() {
+    /**
+     * RDF representation of the property key.
+     */
+    public URI rdfKey() {
         return key;
     }
-    
-    public Literal o() {
+
+    /**
+     * RDF representation of the property value.
+     */
+    public Literal rdfValue() {
         return val;
     }
-    
+
+    /**
+     * The {@link BlazeElement} this property belongs to.
+     */
     @Override
     public BlazeElement element() {
         return element;
     }
 
+    /**
+     * @see {@link Property#key()}
+     */
     @Override
     public String key() {
         return vf.fromURI(key);
     }
 
+    /**
+     * @see {@link Property#value()}
+     */
     @Override
     @SuppressWarnings("unchecked")
     public V value() throws NoSuchElementException {
         return (V) vf.fromLiteral(val);
     }
     
-    public Literal rdfValue() {
-        return val;
-    }
-
+    /**
+     * @see {@link Property#isPresent()}
+     */
     @Override
     public boolean isPresent() {
         return true;
     }
 
+    /**
+     * @see {@link Property#remove()}
+     * @see {@link BlazeGraph#remove(BlazeProperty)}
+     */
     @Override
     public void remove() {
         graph.remove(this);
     }
     
+    /**
+     * Pass through to {@link ElementHelper#areEqual(Property, Object)}
+     */
     @Override
     public boolean equals(final Object object) {
         return ElementHelper.areEqual(this, object);
     }
 
+    /**
+     * Pass through to {@link ElementHelper#hashCode(Property)}
+     */
     @Override
     public int hashCode() {
         return ElementHelper.hashCode(this);
     }
     
+    /**
+     * Pass through to {@link StringFactory#propertyString(Property)}
+     */
     @Override
     public String toString() {
         return StringFactory.propertyString(this);

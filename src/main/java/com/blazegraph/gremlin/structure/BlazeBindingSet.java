@@ -27,30 +27,59 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * A property graph version of a tuple query result binding set.  Instead of
+ * variable names to RDF values, this does variable names to PG values (element
+ * ids, property keys, property values). 
+ * 
+ * @author mikepersonick
+ */
 public class BlazeBindingSet implements Iterable<Map.Entry<String,Object>> {
         
+    /**
+     * The variable bindings - variable name to PG value.
+     */
     private final Map<String, Object> vals;
     
-    public BlazeBindingSet(final Map<String, Object> vals) {
+    /**
+     * Construct an instance.
+     */
+    BlazeBindingSet(final Map<String, Object> vals) {
         this.vals = vals;
     }
     
-    public Object get(final String key) {
-        return vals.get(key);
-    }
-    
-    public boolean isBound(final String key) {
-        return vals.containsKey(key);
+    /**
+     * Get the PG value (element id, property key, or property value) for the
+     * specified variable.
+     */
+    public Object get(final String var) {
+        return vals.get(var);
     }
 
-    public Set<String> keys() {
+    /**
+     * True if the binding set has a PG value for the specified variable.
+     */
+    public boolean isBound(final String var) {
+        return vals.containsKey(var);
+    }
+
+    /**
+     * A unmodifiable set of variables bound in this binding set.
+     */
+    public Set<String> vars() {
         return Collections.unmodifiableSet(vals.keySet());
     }
     
+    /**
+     * An unmodifiable map of variable bindings - variable name to PG value.
+     */
     public Map<String, Object> map() {
         return Collections.unmodifiableMap(vals);
     }
 
+    /**
+     * An iterator of variable bindings - variable name to PG value.
+     */
     @Override
     public Iterator<Map.Entry<String,Object>> iterator() {
         return vals.entrySet().iterator();
