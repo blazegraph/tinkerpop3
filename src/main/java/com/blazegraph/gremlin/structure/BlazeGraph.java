@@ -114,7 +114,7 @@ import info.aduna.iteration.CloseableIteration;
  *  
  * @author mikepersonick
  */
-@Graph.OptIn("com.blazegraph.gremlin.structure.StructureModifiedSuite")
+@Graph.OptIn("com.blazegraph.gremlin.structure.StructureStandardSuite")
 @Graph.OptIn(Graph.OptIn.SUITE_STRUCTURE_INTEGRATE)
 @Graph.OptIn(Graph.OptIn.SUITE_STRUCTURE_PERFORMANCE)
 @Graph.OptIn(Graph.OptIn.SUITE_GROOVY_ENVIRONMENT)

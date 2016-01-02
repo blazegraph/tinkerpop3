@@ -74,7 +74,7 @@ import org.junit.runners.model.RunnerBuilder;
  * 
  * @author mikepersonick
  */
-public class StructureModifiedSuite extends AbstractGremlinSuite {
+public class StructureStandardSuite extends AbstractGremlinSuite {
 
     
     /**
@@ -114,7 +114,7 @@ public class StructureModifiedSuite extends AbstractGremlinSuite {
             
     };
 
-    public StructureModifiedSuite(final Class<?> klass, final RunnerBuilder builder) throws InitializationError {
+    public StructureStandardSuite(final Class<?> klass, final RunnerBuilder builder) throws InitializationError {
         super(klass, builder, allTests, null, false, TraversalEngine.Type.STANDARD);
     }
     

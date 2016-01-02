@@ -33,6 +33,6 @@ import junit.framework.TestCase;
  *  
  * @author mikepersonick
  */
-@RunWith(StructureModifiedSuite.class)
+@RunWith(StructureStandardSuite.class)
 @GraphProviderClass(provider = EmbeddedBlazeGraphProvider.class, graph = BlazeGraph.class)
 public class BlazeGraphStructureStandardTest extends TestCase {}
