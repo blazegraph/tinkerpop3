@@ -27,21 +27,20 @@ import java.util.Properties;
 import com.bigdata.journal.BufferMode;
 import com.bigdata.journal.Journal;
 import com.bigdata.rdf.axioms.NoAxioms;
-import com.bigdata.rdf.internal.InlineURIFactory;
-import com.bigdata.rdf.internal.MultipurposeIDHandler;
 import com.bigdata.rdf.sail.BigdataSail;
 import com.bigdata.rdf.sail.BigdataSailRepository;
 import com.bigdata.rdf.sail.RDRHistory;
 import com.bigdata.rdf.store.AbstractTripleStore;
-import com.bigdata.rdf.vocab.BaseVocabularyDecl;
-import com.bigdata.rdf.vocab.core.BigdataCoreVocabulary_v20151210;
-import com.blazegraph.gremlin.structure.BlazeValueFactory;
+import com.blazegraph.gremlin.internal.Tinkerpop3CoreVocab_v10;
+import com.blazegraph.gremlin.internal.Tinkerpop3ExtensionFactory;
+import com.blazegraph.gremlin.internal.Tinkerpop3InlineURIFactory;
 import com.blazegraph.gremlin.util.Code;
 
 /**
  * This utilty class is provided as a convenience for getting started with
  * Blazegraph.  You will eventually want to create your own custom configuration
- * specific to your application.  Visit wiki.blazegraph.com for more information
+ * specific to your application.  Visit our online 
+ * <a href="http://wiki.blazegraph.com">user guide</a> for more information
  * on configuration and performance optimization, or contact us for more direct
  * developer support.
  *  
@@ -103,9 +102,10 @@ public class BasicRepositoryProvider {
     }
     
     /**
-     * Some reasonable defaults to get us up and running.
-     * 
-     * @see 
+     * Some reasonable defaults to get us up and running. Visit our online 
+     * <a href="http://wiki.blazegraph.com">user guide</a> for more information
+     * on configuration and performance optimization, or contact us for more direct
+     * developer support.
      * 
      * @return
      *      config properties
@@ -120,7 +120,7 @@ public class BasicRepositoryProvider {
         props.setProperty(Journal.Options.BUFFER_MODE, BufferMode.DiskRW.toString());
 
         /*
-         * Turn off all inference.
+         * Turn off all RDFS/OWL inference.
          */
         props.setProperty(BigdataSail.Options.AXIOMS_CLASS, NoAxioms.class.getName());
         props.setProperty(BigdataSail.Options.TRUTH_MAINTENANCE, "false");
@@ -143,23 +143,32 @@ public class BasicRepositoryProvider {
         props.setProperty(AbstractTripleStore.Options.COMPUTE_CLOSURE_FOR_SIDS, "false");
 
         /*
-         * Inline string literals up to 10 characters (no dictionary).
+         * Inline string literals up to 10 characters (avoids dictionary indices
+         * for short strings).
          */
         props.setProperty(AbstractTripleStore.Options.INLINE_TEXT_LITERALS, "true");
         props.setProperty(AbstractTripleStore.Options.MAX_INLINE_TEXT_LENGTH, "10");
         
         /*
-         * Custom vocabulary - get the <blaze:> namespace into the vocab.
+         * Custom core Tinkerpop3 vocabulary.  Applications will probably want
+         * to extend this.
          */
         props.setProperty(AbstractTripleStore.Options.VOCABULARY_CLASS, 
-                TinkerpopCoreVocab.class.getName());
+                Tinkerpop3CoreVocab_v10.class.getName());
         
         /*
          * Use a multi-purpose inline URI factory that will auto-inline URIs
          * in the <blaze:> namespace.
          */
         props.setProperty(AbstractTripleStore.Options.INLINE_URI_FACTORY_CLASS,
-                TinkerpopInlineURIFactory.class.getName());
+                Tinkerpop3InlineURIFactory.class.getName());
+        
+        /*
+         * Custom Tinkerpop3 extension factory for the ListIndexExtension IV,
+         * used for Cardinality.list.
+         */
+        props.setProperty(AbstractTripleStore.Options.EXTENSION_FACTORY_CLASS, 
+                Tinkerpop3ExtensionFactory.class.getName());
         
         /*
          * Turn on history.  You can turn history off by not setting this
@@ -172,57 +181,4 @@ public class BasicRepositoryProvider {
         
     }
     
-    /**
-     * Use a multi-purpose inline URI factory that will auto-inline URIs
-     * in the <blaze:> namespace.
-     * 
-     * @author mikepersonick
-     */
-    public static class TinkerpopInlineURIFactory extends InlineURIFactory {
-        
-        public TinkerpopInlineURIFactory() {
-            addHandler(new MultipurposeIDHandler(BlazeValueFactory.Defaults.NAMESPACE, 10));
-        }
-        
-    }
-    
-    /**
-     * Custom vocabulary - get the <blaze:> namespace into the vocab.
-     */
-    public static class TinkerpopCoreVocab extends BigdataCoreVocabulary_v20151210 {
-
-        /**
-         * De-serialization ctor.
-         */
-        public TinkerpopCoreVocab() {
-            super();
-        }
-        
-        /**
-         * Used by {@link AbstractTripleStore#create()}.
-         * 
-         * @param namespace
-         *            The namespace of the KB instance.
-         */
-        public TinkerpopCoreVocab(final String namespace) {
-            super(namespace);
-        }
-
-        @Override
-        protected void addValues() {
-
-            super.addValues();
-
-            /*
-             * Some new URIs for graph and RDR management.
-             */
-            addDecl(new BaseVocabularyDecl(
-                    BlazeValueFactory.Defaults.NAMESPACE));
-
-        }
-
-    }
-    
-    
-
 }

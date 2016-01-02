@@ -37,7 +37,7 @@ It's important to understand how Blazegraph organizes property graph data as RDF
 	# "statement as value"
 	<<:john :knows :mary>> dc:source <http://johnknowsmary.com> .
 	
-Blazegraph uses the SAIL API and represents RDF* reified statements as bnodes in that API.  This is important for understanding how to write SPARQL queries against TP3 graphs and how to interpret query results.
+Blazegraph uses the OpenRDF SAIL API and represents RDF* reified statements as bnodes in that API.  This is important for understanding how to write SPARQL queries against TP3 graphs and how to interpret query results.
 
 Property graph values must be converted into RDF values and vice versa.  Blazegraph provides a BlazeValueFactory interface with a default implementation.  You can extend this interface and provide your own value factory if you prefer a custom look for the RDF values in your property graph.  
 

@@ -64,7 +64,6 @@ import org.openrdf.repository.RepositoryConnection;
 
 import com.bigdata.rdf.internal.XSD;
 import com.bigdata.rdf.internal.impl.extensions.DateTimeExtension;
-import com.bigdata.rdf.internal.impl.literal.PackedLongIV;
 import com.bigdata.rdf.model.BigdataBNode;
 import com.bigdata.rdf.model.BigdataStatement;
 import com.bigdata.rdf.model.BigdataURI;
@@ -237,6 +236,11 @@ public abstract class BlazeGraph implements Graph {
     private final URI VALUE;
     
     /**
+     * Datatype URI for list index for Cardinality.list vertex properties. 
+     */
+    private final URI LI_DATATYPE;
+
+    /**
      * Transform functions for converting from RDF query results to property
      * graph results.
      */
@@ -278,6 +282,7 @@ public abstract class BlazeGraph implements Graph {
         
         this.LABEL = vf.label();
         this.VALUE = vf.value();
+        this.LI_DATATYPE = vf.liDatatype();
         
         this.sparql = new SparqlGenerator(vf);
         this.transforms = new Transforms();
@@ -487,7 +492,7 @@ public abstract class BlazeGraph implements Graph {
         if (cardinality == Cardinality.list) {
             final Literal timestamp = rdfvf.createLiteral(
                     String.valueOf(vpIdFactory.getAndIncrement()), 
-                    PackedLongIV.PACKED_LONG);
+                    LI_DATATYPE);
             stmt = rdfvf.createStatement(s, p, timestamp);
         } else {
             stmt = rdfvf.createStatement(s, p, lit);
@@ -1332,12 +1337,12 @@ public abstract class BlazeGraph implements Graph {
 
                     final URI dt = lit.getDatatype();
                     
-                    if (dt != null && PackedLongIV.PACKED_LONG.equals(dt)) {
-                        // blaze:a blaze:key "0"^^"blaze:packedLong"
+                    if (dt != null && LI_DATATYPE.equals(dt)) {
+                        // blaze:a blaze:key "0"^^"bg:listIndex"
                         
                         /*
                          * We actually want to ignore these and wait for
-                         * <<blaze:a blaze:key "0"^^"blaze:packedLong">> rdfs:value "val" .
+                         * <<blaze:a blaze:key "0"^^"bg:listIndex">> rdfs:value "val" .
                          * to emit a VertexPropertyAtom.
                          */
                         return Optional.empty();
@@ -1374,7 +1379,7 @@ public abstract class BlazeGraph implements Graph {
                         new BlazeGraphAtom.EdgeAtom(edgeId, label, fromId, toId));
                     
                 } else if (VALUE.equals(p)) {
-                    // <<blaze:a blaze:key "0"^^"blaze:packedLong">> rdfs:value "val" .
+                    // <<blaze:a blaze:key "0"^^"bg:listIndex">> rdfs:value "val" .
                     
                     final String vertexId = vf.fromURI((URI) reified.getSubject());
                     final String key = vf.fromURI(reified.getPredicate());
@@ -1399,7 +1404,7 @@ public abstract class BlazeGraph implements Graph {
                                     
                     } else {
                         // <<blaze:a blaze:key "val">> blaze:key "val" .
-                        // <<blaze:a blaze:key "0"^^"blaze:packedLong">> blaze:key "val" .
+                        // <<blaze:a blaze:key "0"^^"bg:listIndex">> blaze:key "val" .
                         
                         final String vpId = vertexPropertyId(reified);
                         

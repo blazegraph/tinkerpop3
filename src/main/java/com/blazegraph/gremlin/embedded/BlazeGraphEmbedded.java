@@ -560,18 +560,18 @@ public class BlazeGraphEmbedded extends BlazeGraph {
              * Collect up unmaterialized ISPOs out of the change records
              * (only the removes are unmaterialized).
              */
-            int i = 0;
+            int nRemoves = 0;
             final ISPO[] spos = new ISPO[n];
-            for (IChangeRecord rec : a) {
-                if (rec.getChangeAction() == ChangeAction.REMOVED)
-                    spos[i++] = rec.getStatement();
+            for (int i = 0; i < n; i++) {
+                if (a[i].getChangeAction() == ChangeAction.REMOVED)
+                    spos[nRemoves++] = a[i].getStatement();
             }
 
             /*
              * Use the database to resolve them into BigdataStatements
              */
             final BigdataStatementIterator it = db
-                    .asStatementIterator(new ChunkedArrayIterator<ISPO>(i,
+                    .asStatementIterator(new ChunkedArrayIterator<ISPO>(nRemoves,
                             spos, null/* keyOrder */));
 
             /*
@@ -882,6 +882,15 @@ public class BlazeGraphEmbedded extends BlazeGraph {
      */
     public long statementCount() throws Exception {
         return repo.getDatabase().getStatementCount(true);
+    }
+
+    /**
+     * Count all the statements in the store including deleted statements.  
+     * Bypasses the SAIL, so you must call {@link #flush()} to get an accurate 
+     * picture.
+     */
+    public long historicalStatementCount() throws Exception {
+        return repo.getDatabase().getStatementCount(false);
     }
 
     ////////////////////////////////////////////////////////////////////////
