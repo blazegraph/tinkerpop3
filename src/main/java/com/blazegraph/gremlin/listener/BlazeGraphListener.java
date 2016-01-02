@@ -22,10 +22,12 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 package com.blazegraph.gremlin.listener;
 
+import com.blazegraph.gremlin.embedded.BlazeGraphEmbedded;
+
 /**
- * Listener interface for a LocalBlazeGraph.
+ * Listener interface for a {@link BlazeGraphEmbedded}.
  * 
- * @see @link {LocalBlazeGraph#addListener}
+ * @see {@link BlazeGraphEmbedded#addListener(BlazeGraphListener)}
  * 
  * @author mikepersonick
  */
@@ -36,7 +38,7 @@ public interface BlazeGraphListener {
      * Notification of an edit to the graph.
      * 
      * @param edit
-     *          the edit
+     *          the {@link BlazeGraphEdit}
      * @param raw
      *          toString() version of the raw RDF mutation
      */

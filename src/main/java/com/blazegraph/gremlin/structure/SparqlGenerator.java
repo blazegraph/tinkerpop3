@@ -31,6 +31,7 @@ import java.util.UUID;
 import java.util.function.Function;
 
 import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.gremlin.structure.VertexProperty.Cardinality;
 import org.openrdf.model.Literal;
 import org.openrdf.model.Resource;
 import org.openrdf.model.URI;
@@ -42,12 +43,29 @@ import com.bigdata.rdf.sparql.ast.QueryHints;
 import com.bigdata.rdf.store.BDS;
 import com.blazegraph.gremlin.structure.BlazeGraph.Match;
 
-public class SparqlGenerator {
+/**
+ * Generate Sparql queries according the blazegraph-tinkerpop3 PG/RDF data model.
+ * 
+ * @author mikepersonick
+ */
+class SparqlGenerator {
 
+    /**
+     * Sparql query templates to be fully materialized with a 
+     * {@link BlazeValueFactory}.
+     * 
+     * @author mikepersonick
+     */
     private static interface Templates {
         
+        /**
+         * Find and replace for values clauses.
+         */
         String VALUES = UUID.randomUUID().toString() + "\n";
         
+        /**
+         * @see {@link BlazeGraph#vertices(Object...)}
+         */
         String VERTICES =
                 "select ?vertex ?label where {\n" +
                      VALUES +
@@ -55,11 +73,17 @@ public class SparqlGenerator {
                 "    filter(isURI(?vertex)) .\n" +
                 "}";
         
+        /**
+         * @see {@link BlazeGraph#vertexCount()}
+         */
         String VERTEX_COUNT =
                 "select (count(?vertex) as ?count) where {\n" +
                 "    ?vertex <LABEL> ?label . filter(isURI(?vertex)) .\n" +
                 "}";
         
+        /**
+         * @see {@link BlazeGraph#edges(Object...)}
+         */
         String EDGES =
                 "select ?edge ?label ?fromLabel ?toLabel where {\n" +
                      VALUES +
@@ -72,11 +96,17 @@ public class SparqlGenerator {
                 "    }" +
                 "}";
 
+        /**
+         * @see {@link BlazeGraph#edgeCount()}
+         */
         String EDGE_COUNT =
                 "select (count(?edge) as ?count) where {\n" +
                 "    ?edge <LABEL> ?label . filter(!isURI(?edge)) .\n" +
                 "}";
         
+        /**
+         * @see {@link BlazeGraph#properties(BlazeReifiedElement, String...)}
+         */
         String PROPERTIES =
                 "select ?key ?val where {\n" +
                      VALUES + 
@@ -85,6 +115,9 @@ public class SparqlGenerator {
                 "    filter(?key not in(<LABEL>,<VALUE>,<ADDED>,<REMOVED>)) .\n" +
                 "}";
         
+        /**
+         * @see {@link BlazeGraph#properties(BlazeVertex, String...)}
+         */
         String VERTEX_PROPERTIES =
                 "select ?vp ?val where {\n" +
                      VALUES + 
@@ -101,8 +134,15 @@ public class SparqlGenerator {
                 "    }\n" +
                 "} order by ?order";
         
+        /**
+         * Find and replace for the edge direction.
+         */
         String DIRECTION = UUID.randomUUID().toString() + "\n";
         
+        /**
+         * @see {@link BlazeGraph#edgesFromVertex(BlazeVertex, Direction, String...)}
+         * @see {@link BlazeVertex#edges(Direction, String...)}
+         */
         String EDGES_FROM_VERTEX =
                 "select ?edge ?label ?fromLabel ?toLabel where {\n" +
                      VALUES + 
@@ -111,6 +151,10 @@ public class SparqlGenerator {
                 "    filter(!isURI(?edge)) .\n" +
                 "}";
         
+        /**
+         * @see {@link BlazeGraph#edgesFromVertex(BlazeVertex, Direction, String...)}
+         * @see {@link BlazeVertex#edges(Direction, String...)}
+         */
         String FORWARD =
                 "    bind(<<?src ?id ?to>> as ?edge) .\n" +
                 "    filter(isURI(?src) && isURI(?to)) .\n" +
@@ -119,6 +163,10 @@ public class SparqlGenerator {
                 "        ?to <LABEL> ?toLabel .\n" +
                 "    }\n";
         
+        /**
+         * @see {@link BlazeGraph#edgesFromVertex(BlazeVertex, Direction, String...)}
+         * @see {@link BlazeVertex#edges(Direction, String...)}
+         */
         String REVERSE =
                 "    bind(<<?from ?id ?src>> as ?edge) .\n" +
                 "    filter(isURI(?src) && isURI(?from)) .\n" +
@@ -127,6 +175,10 @@ public class SparqlGenerator {
                 "        ?from <LABEL> ?fromLabel .\n" +
                 "    }\n";
         
+        /**
+         * @see {@link BlazeGraph#edgesFromVertex(BlazeVertex, Direction, String...)}
+         * @see {@link BlazeVertex#edges(Direction, String...)}
+         */
         String BOTH =
                 "    {\n"+
                          FORWARD.replace("    ", "        ") +
@@ -137,6 +189,8 @@ public class SparqlGenerator {
         /**
          * Used by Cardinality.single to remove all old vertex properties
          * except exact matches for the new rdf:value.
+         * 
+         * @see {@link BlazeGraph#vertexProperty(BlazeVertex, Cardinality, String, Object, Object...)}
          */
         String CLEAN_VERTEX_PROPS =
                 "delete {\n" +
@@ -181,6 +235,8 @@ public class SparqlGenerator {
         /**
          * Sparql template for history query.
          * 
+         * @see {@link BlazeGraph#history(List)}
+         * 
          * TODO FIXME Does not show history of VertexProperties.  Need to
          * verify that RDR syntax works in values clause.
          */
@@ -204,6 +260,9 @@ public class SparqlGenerator {
                 "    hint:Query hint:history true .\n" +
                 "} order by ?time ?action";
 
+        /**
+         * @see {@link BlazeGraph#remove(BlazeVertex)}
+         */
         String REMOVE_VERTEX =
                 "delete {\n" +
                 "    ?id ?p ?o .\n" +
@@ -226,7 +285,9 @@ public class SparqlGenerator {
                 "    }\n" +
                 "}";
         
-        
+        /**
+         * @see {@link BlazeGraph#remove(BlazeReifiedElement)
+         */
         String REMOVE_REIFIED_ELEMENT =
                 "delete {\n" +
                 "    ?s ?p ?o .\n" +
@@ -240,6 +301,9 @@ public class SparqlGenerator {
                 "    }\n" +
                 "}";
         
+        /**
+         * @see {@link BlazeGraph#search(String, Match)}
+         */
         String TEXT_SEARCH =
                 "select ?vertex ?edge ?label ?fromLabel ?toLabel ?vp ?vpVal ?key ?val \n" +
                 "where {\n" +
@@ -324,8 +388,11 @@ public class SparqlGenerator {
     
     private final String TEXT_SEARCH;
 
-    
-    public SparqlGenerator(final BlazeValueFactory vf) {
+    /**
+     * Create materialized versions of the Sparql templates using the supplied
+     * {@link BlazeValueFactory}.
+     */
+    SparqlGenerator(final BlazeValueFactory vf) {
         final String label = vf.label().stringValue();
         final String value = vf.value().stringValue();
         final String li = vf.liDatatype().stringValue();
@@ -356,7 +423,10 @@ public class SparqlGenerator {
         this.TEXT_SEARCH = f.apply(Templates.TEXT_SEARCH);
     }
     
-    public String vertices(final List<URI> uris) {
+    /**
+     * @see {@link Templates#VERTICES}
+     */
+    String vertices(final List<URI> uris) {
         final StringBuilder sb = new StringBuilder();
         if (!uris.isEmpty()) {
             buildValuesClause(sb, "?vertex", uris);
@@ -365,11 +435,17 @@ public class SparqlGenerator {
         return queryStr;
     }
     
-    public String vertexCount() {
+    /**
+     * @see {@link Templates#VERTEX_COUNT}
+     */
+    String vertexCount() {
         return VERTEX_COUNT;
     }
     
-    public String edges(final List<URI> uris) {
+    /**
+     * @see {@link Templates#EDGES}
+     */
+    String edges(final List<URI> uris) {
         final StringBuilder sb = new StringBuilder();
         if (!uris.isEmpty()) {
             buildValuesClause(sb, "?eid", uris);
@@ -378,11 +454,17 @@ public class SparqlGenerator {
         return queryStr;
     }
     
-    public String edgeCount() {
+    /**
+     * @see {@link Templates#EDGE_COUNT}
+     */
+    String edgeCount() {
         return EDGE_COUNT;
     }
     
-    public String properties(final BlazeReifiedElement element, final List<URI> uris) {
+    /**
+     * @see {@link Templates#PROPERTIES}
+     */
+    String properties(final BlazeReifiedElement element, final List<URI> uris) {
         final StringBuilder vc = new StringBuilder();
         if (!uris.isEmpty()) {
             buildValuesClause(vc, "?key", uris);
@@ -401,7 +483,10 @@ public class SparqlGenerator {
         return queryStr;
     }
     
-    public String vertexProperties(final BlazeVertex vertex, final List<URI> uris) {
+    /**
+     * @see {@link Templates#VERTEX_PROPERTIES}
+     */
+    String vertexProperties(final BlazeVertex vertex, final List<URI> uris) {
         final StringBuilder vc = new StringBuilder();
         if (!uris.isEmpty()) {
             buildValuesClause(vc, "?key", uris);
@@ -413,7 +498,10 @@ public class SparqlGenerator {
         return queryStr;
     }
     
-    public String edgesFromVertex(final BlazeVertex src, final Direction dir,
+    /**
+     * @see {@link Templates#EDGES_FROM_VERTEX}
+     */
+    String edgesFromVertex(final BlazeVertex src, final Direction dir,
             final List<Literal> edgeLabels) {
         final URI id = src.rdfId();
         final StringBuilder vc = buildValuesClause(
@@ -429,7 +517,10 @@ public class SparqlGenerator {
         return queryStr;
     }
     
-    public String cleanVertexProps(final URI vertex, final URI key, 
+    /**
+     * @see {@link Templates#CLEAN_VERTEX_PROPS}
+     */
+    String cleanVertexProps(final URI vertex, final URI key, 
             final Literal val) {
         return CLEAN_VERTEX_PROPS
                 .replace("VERTEX", vertex.toString())
@@ -437,7 +528,10 @@ public class SparqlGenerator {
                 .replace("VAL", val.toString());
     }
     
-    public String history(final List<URI> uris) {
+    /**
+     * @see {@link Templates#HISTORY}
+     */
+    String history(final List<URI> uris) {
         final StringBuilder vc = buildValuesClause(
                 new StringBuilder(), "?id", uris);
         final String queryStr = 
@@ -445,7 +539,10 @@ public class SparqlGenerator {
         return queryStr;
     }
     
-    public String removeVertex(final BlazeVertex v) {
+    /**
+     * @see {@link Templates#REMOVE_VERTEX}
+     */
+    String removeVertex(final BlazeVertex v) {
         final URI id = v.rdfId();
         final StringBuilder vc = buildValuesClause(
                 new StringBuilder(), "?id", asList(id));
@@ -454,7 +551,10 @@ public class SparqlGenerator {
         return queryStr;
     }
     
-    public String removeReifiedElement(final BlazeReifiedElement e) {
+    /**
+     * @see {@link Templates#REMOVE_REIFIED_ELEMENT}
+     */
+    String removeReifiedElement(final BlazeReifiedElement e) {
         final BigdataBNode sid = e.rdfId();
         final BigdataStatement stmt = sid.getStatement();
         final Resource s = stmt.getSubject();
@@ -468,7 +568,10 @@ public class SparqlGenerator {
         return queryStr;
     }
     
-    public String search(final String search, final Match match) {
+    /**
+     * @see {@link Templates#TEXT_SEARCH}
+     */
+    String search(final String search, final Match match) {
         final Boolean matchAll = match != Match.ANY;
         final Boolean matchExact = match == Match.EXACT;
         final String queryStr = TEXT_SEARCH
@@ -476,6 +579,16 @@ public class SparqlGenerator {
                 .replace("?matchAll", matchAll.toString())
                 .replace("?matchExact", matchExact.toString());
         return queryStr;
+    }
+    
+    private String sparql(final Value val) {
+        if (val instanceof Literal) {
+            return val.toString();
+        } else if (val instanceof URI) {
+            return '<' + val.stringValue() + '>';
+        } else {
+            throw new IllegalArgumentException();
+        }
     }
     
     private StringBuilder buildValuesClause(final StringBuilder sb, 
@@ -500,23 +613,13 @@ public class SparqlGenerator {
         sb.append(") {");
         vals.stream().forEach(val -> {
             sb.append("\n        (");
-            sb.append(val.stream().map(SparqlGenerator::sparql).collect(joining(" ")));
+            sb.append(val.stream().map(this::sparql).collect(joining(" ")));
             sb.append(")");
         });
         sb.append("\n    }\n");
         return sb;
     }
 
-    public static final String sparql(final Value val) {
-        if (val instanceof Literal) {
-            return val.toString();
-        } else if (val instanceof URI) {
-            return '<' + val.stringValue() + '>';
-        } else {
-            throw new IllegalArgumentException();
-        }
-    }
-    
 
 
 }

@@ -22,26 +22,64 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 package com.blazegraph.gremlin.listener;
 
+/**
+ * An edit consists of an edit action (add or remove), the atomic unit of graph
+ * information that was edited ({@link BlazeGraphAtom}), and the commit time of
+ * the edit. This is the unit of graph information used by the listener and
+ * history APIs.  Listeners will get edits with no timestamp information, that
+ * is because the edits are happening prior to a commit.  Listeners will 
+ * eventually get a commit notification with a timestamp (or a rollback).
+ * The history API will provide timestamps, since it is dealing with committed
+ * edits that happened in the past.
+ * 
+ * @author mikepersonick
+ */
 public class BlazeGraphEdit { 
-    
+
+    /**
+     * Edit action - add or remove.
+     * 
+     * @author mikepersonick
+     */
     public static enum Action {
-        
+
+        /**
+         * Graph atom added.
+         */
         Add, 
         
+        /**
+         * Graph atom removed.
+         */
         Remove;
         
     }
 
+    /**
+     * Edit action.
+     */
     private final Action action;
 
+    /**
+     * Atomic unit of graph information edited.
+     */
     private final BlazeGraphAtom atom;
     
+    /**
+     * The commit time of the edit action.
+     */
     private final long timestamp;
     
+    /**
+     * Construct an edit with an unknown commit time (listener API).
+     */
     public BlazeGraphEdit(final Action action, final BlazeGraphAtom atom) {
         this(action, atom, 0l);
     }
 
+    /**
+     * Construct an edit with an known commit time (history API).
+     */
     public BlazeGraphEdit(final Action action, final BlazeGraphAtom atom, 
             final long timestamp) {
         this.action = action;
@@ -49,14 +87,24 @@ public class BlazeGraphEdit {
         this.timestamp = timestamp;
     }
 
+    /**
+     * Return the edit action.
+     */
     public Action getAction() {
         return action;
     }
 
+    /**
+     * Return the atomic unit of graph information edited.
+     */
     public BlazeGraphAtom getAtom() {
         return atom;
     }
     
+    /**
+     * Return the commit time of the edit action or 0l if this is an 
+     * uncommitted edit.
+     */
     public long getTimestamp() {
         return timestamp;
     }

@@ -269,7 +269,7 @@ public abstract class BlazeGraph implements Graph {
         
         this.vf = Optional.ofNullable((BlazeValueFactory) 
                                 config.getProperty(Options.VALUE_FACTORY))
-                          .orElse(DefaultBlazeValueFactory.INSTANCE);
+                          .orElse(BlazeValueFactory.INSTANCE);
         
         final long listIndexFloor = config.getLong(
                 Options.LIST_INDEX_FLOOR, System.currentTimeMillis());

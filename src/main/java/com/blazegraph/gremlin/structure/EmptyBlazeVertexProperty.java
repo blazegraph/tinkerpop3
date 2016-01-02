@@ -26,11 +26,17 @@ import java.util.NoSuchElementException;
 
 import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
+import org.apache.tinkerpop.gremlin.structure.util.empty.EmptyVertexProperty;
 import org.openrdf.model.Literal;
 
 import com.bigdata.rdf.model.BigdataBNode;
 import com.blazegraph.gremlin.util.CloseableIterator;
 
+/**
+ * Wanted to extend TP3's {@link EmptyVertexProperty}, but it's final.
+ * 
+ * @author mikepersonick
+ */
 public class EmptyBlazeVertexProperty<V> extends BlazeVertexProperty<V> {
 
     public static final EmptyBlazeVertexProperty INSTANCE = new EmptyBlazeVertexProperty<>();

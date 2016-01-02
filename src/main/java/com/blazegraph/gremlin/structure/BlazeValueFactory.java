@@ -46,6 +46,11 @@ import com.blazegraph.gremlin.internal.ListIndexExtension;
 public interface BlazeValueFactory {
 
     /**
+     * Default instance.
+     */
+    public static final BlazeValueFactory INSTANCE = new BlazeValueFactory() {};
+
+    /**
      * Some default constants.
      * 
      * @author mikepersonick

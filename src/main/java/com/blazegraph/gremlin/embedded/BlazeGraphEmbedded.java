@@ -455,8 +455,8 @@ public class BlazeGraphEmbedded extends BlazeGraph {
     private class ChangeLogTransformer implements IChangeLog {
         
         /**
-         * We need to buffer and materialize these.  Remove events come in
-         * unmaterialized.  Default buffer size is 1000.
+         * We need to buffer and materialize these, since remove events come in
+         * with unmaterialized values.  Default buffer size is 1000.
          */
         private final AbstractArrayBuffer<IChangeRecord> records = 
                 new AbstractArrayBuffer<IChangeRecord>(1000, IChangeRecord.class, null) {
@@ -491,7 +491,7 @@ public class BlazeGraphEmbedded extends BlazeGraph {
             
             /*
              * Adds come in already materialized. Removes do not. We batch and
-             * materialize in bulk.
+             * materialize removes in bulk.
              */
             records.add(record);
             
@@ -507,7 +507,9 @@ public class BlazeGraphEmbedded extends BlazeGraph {
             if (listeners.isEmpty())
                 return;
 
-            // some kinds of edits will be ignored
+            /*
+             * Some RDF statements do not map to PG graph edits.
+             */
             toGraphEdit(record).ifPresent(edit ->
                 listeners.forEach(listener -> 
                     listener.graphEdited(edit, record.toString()))
@@ -515,12 +517,13 @@ public class BlazeGraphEmbedded extends BlazeGraph {
         }
         
         /**
-         * Turn a bigdata change record into a graph edit.
+         * Turn a bigdata change record into a graph edit.  Some RDF statements
+         * do not map to PG graph edits.
          * 
          * @param record
-         *          Bigdata change record
+         *          Blaze RDF change event
          * @return
-         *          graph edit
+         *          PG graph edit
          */
         protected Optional<BlazeGraphEdit> toGraphEdit(final IChangeRecord record) {
             
@@ -576,7 +579,8 @@ public class BlazeGraphEmbedded extends BlazeGraph {
 
             /*
              * Stream the records, replacing removes with materialized versions
-             * of same.
+             * of same.  We can do this because the iterator above is order-
+             * preserving.
              */
             return Arrays.stream(a, 0, n).onClose(() -> it.close())
                      .map(r -> {

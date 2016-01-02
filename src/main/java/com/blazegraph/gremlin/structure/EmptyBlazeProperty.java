@@ -25,10 +25,16 @@ package com.blazegraph.gremlin.structure;
 import java.util.NoSuchElementException;
 
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
+import org.apache.tinkerpop.gremlin.structure.util.empty.EmptyProperty;
 import org.openrdf.model.Literal;
 import org.openrdf.model.Resource;
 import org.openrdf.model.URI;
 
+/**
+ * Wanted to extend TP3's {@link EmptyProperty}, but it's final.
+ * 
+ * @author mikepersonick
+ */
 public class EmptyBlazeProperty<V> extends BlazeProperty<V> {
 
     public static final EmptyBlazeProperty INSTANCE = new EmptyBlazeProperty<>();
