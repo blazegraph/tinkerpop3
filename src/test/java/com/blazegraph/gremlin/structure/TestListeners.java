@@ -29,11 +29,8 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty.Cardinality;
 
-import com.blazegraph.gremlin.embedded.BlazeGraphEmbedded;
 import com.blazegraph.gremlin.listener.BlazeGraphEdit;
 import com.blazegraph.gremlin.util.LambdaLogger;
-
-import junit.framework.TestCase;
 
 public class TestListeners extends TestBlazeGraph {
 

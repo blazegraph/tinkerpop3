@@ -24,7 +24,6 @@ package com.blazegraph.gremlin.structure;
 
 import java.util.NoSuchElementException;
 
-import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.openrdf.model.Literal;
 import org.openrdf.model.Resource;

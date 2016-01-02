@@ -26,7 +26,6 @@ import java.util.Objects;
 
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.openrdf.model.Literal;
-import org.openrdf.model.Resource;
 
 import com.bigdata.rdf.model.BigdataURI;
 

@@ -22,20 +22,14 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 package com.blazegraph.gremlin.structure;
 
-import java.util.HashMap;
 import java.util.List;
 
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty.Cardinality;
 
-import com.bigdata.rdf.sail.RDRHistory;
-import com.bigdata.rdf.store.AbstractTripleStore;
-import com.blazegraph.gremlin.embedded.BlazeGraphEmbedded;
 import com.blazegraph.gremlin.listener.BlazeGraphEdit;
 import com.blazegraph.gremlin.util.LambdaLogger;
-
-import junit.framework.TestCase;
 
 public class TestHistory extends TestBlazeGraph {
 
