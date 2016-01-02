@@ -41,6 +41,12 @@ abstract class AbstractBlazeElement implements BlazeElement {
      * {@link BlazeGraph} instance this element belongs to.
      */
     protected final BlazeGraph graph;
+
+    /**
+     * The {@link BlazeValueFactory} provided by the graph for round-tripping
+     * values.
+     */
+    protected final BlazeValueFactory vf;
     
     /**
      * The URI representation of the element id.
@@ -51,12 +57,6 @@ abstract class AbstractBlazeElement implements BlazeElement {
      * The Literal representation of the element label.
      */
     protected final Literal label;
-    
-    /**
-     * The {@link BlazeValueFactory} provided by the graph for round-tripping
-     * values.
-     */
-    protected final BlazeValueFactory vf;
     
     AbstractBlazeElement(final BlazeGraph graph, final BigdataURI uri, 
             final Literal label) {
