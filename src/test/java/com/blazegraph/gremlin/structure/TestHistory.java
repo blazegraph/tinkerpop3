@@ -22,20 +22,14 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 package com.blazegraph.gremlin.structure;
 
-import java.util.HashMap;
 import java.util.List;
 
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty.Cardinality;
 
-import com.bigdata.rdf.sail.RDRHistory;
-import com.bigdata.rdf.store.AbstractTripleStore;
-import com.blazegraph.gremlin.embedded.BlazeGraphEmbedded;
 import com.blazegraph.gremlin.listener.BlazeGraphEdit;
 import com.blazegraph.gremlin.util.LambdaLogger;
-
-import junit.framework.TestCase;
 
 public class TestHistory extends TestBlazeGraph {
 
@@ -48,7 +42,7 @@ public class TestHistory extends TestBlazeGraph {
         graph.commit();
         
         log.debug(() -> "\n"+graph.dumpStore());
-        assertEquals(4, graph.statementCount());
+        assertEquals(4, graph.historicalStatementCount());
         assertEquals(2, graph.vertexCount());
         countEdits(2, "a", "b");
         
@@ -56,7 +50,7 @@ public class TestHistory extends TestBlazeGraph {
         graph.commit();
         
         log.debug(() -> "\n"+graph.dumpStore());
-        assertEquals(5, graph.statementCount());
+        assertEquals(5, graph.historicalStatementCount());
         assertEquals(1, graph.vertexCount());
         countEdits(2, "a");
         
@@ -64,7 +58,7 @@ public class TestHistory extends TestBlazeGraph {
         graph.commit();
         
         log.debug(() -> "\n"+graph.dumpStore());
-        assertEquals(6, graph.statementCount());
+        assertEquals(6, graph.historicalStatementCount());
         assertEquals(0, graph.vertexCount());
         countEdits(2, "b");
         
@@ -83,7 +77,7 @@ public class TestHistory extends TestBlazeGraph {
         graph.commit();
         
         log.debug(() -> "\n"+graph.dumpStore());
-        assertEquals(10, graph.statementCount());
+        assertEquals(10, graph.historicalStatementCount());
         assertEquals(1, graph.vertexCount());
         assertEquals(2, a.properties().count());
         assertEquals(1, _1.properties().count());
@@ -92,7 +86,7 @@ public class TestHistory extends TestBlazeGraph {
         _1.properties().forEachRemaining(p -> p.remove());
         graph.commit();
         log.debug(() -> "\n"+graph.dumpStore());
-        assertEquals(11, graph.statementCount());
+        assertEquals(11, graph.historicalStatementCount());
         assertEquals(1, graph.vertexCount());
         assertEquals(2, a.properties().count());
         assertEquals(0, _1.properties().count());
@@ -108,7 +102,7 @@ public class TestHistory extends TestBlazeGraph {
         _2.remove();
         graph.commit();
         log.debug(() -> "\n"+graph.dumpStore());
-        assertEquals(13, graph.statementCount());
+        assertEquals(13, graph.historicalStatementCount());
         assertEquals(1, graph.vertexCount());
         assertEquals(1, a.properties().count());
         countEdits(4, "a");
@@ -116,7 +110,7 @@ public class TestHistory extends TestBlazeGraph {
         a.remove();
         graph.commit();
         log.debug(() -> "\n"+graph.dumpStore());
-        assertEquals(15, graph.statementCount());
+        assertEquals(15, graph.historicalStatementCount());
         assertEquals(0, graph.vertexCount());
         countEdits(6, "a");
         
@@ -130,7 +124,7 @@ public class TestHistory extends TestBlazeGraph {
         graph.commit();
         
         log.debug(() -> "\n"+graph.dumpStore());
-        assertEquals(10, graph.statementCount());
+        assertEquals(10, graph.historicalStatementCount());
         countEdits(1, a.id());
         countEdits(1, b.id());
         countEdits(2, e.id());
@@ -138,7 +132,7 @@ public class TestHistory extends TestBlazeGraph {
         e.properties().forEachRemaining(p -> p.remove());
         graph.commit();
         log.debug(() -> "\n"+graph.dumpStore());
-        assertEquals(11, graph.statementCount());
+        assertEquals(11, graph.historicalStatementCount());
         countEdits(1, a.id());
         countEdits(1, b.id());
         countEdits(3, e.id());
@@ -146,7 +140,7 @@ public class TestHistory extends TestBlazeGraph {
         e.remove();
         graph.commit();
         log.debug(() -> "\n"+graph.dumpStore());
-        assertEquals(13, graph.statementCount());
+        assertEquals(13, graph.historicalStatementCount());
         countEdits(1, a.id());
         countEdits(1, b.id());
         countEdits(4, e.id());

@@ -22,28 +22,20 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 package com.blazegraph.gremlin.util;
 
-import java.util.Enumeration;
 import java.util.Map;
-import java.util.ResourceBundle;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Stream;
 
-import org.apache.log4j.Appender;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.apache.log4j.Priority;
 import org.apache.log4j.spi.LocationInfo;
-import org.apache.log4j.spi.LoggerRepository;
 import org.apache.log4j.spi.LoggingEvent;
 
 /**
  * Wrap conditional logging using Java 8 lambdas.
  * 
- * To use this functionality you must set up the factory in log4j.properties:
- *  
- * log4j.loggerFactory=px.avro.util.LambdaLoggerFactory
- * 
- * Then request a LambdaLogger instead of a normal Logger:
+ * To use this functionality, simply request a LambdaLogger instead of a normal Logger:
  * 
  * LambdaLogger log = LambdaLogger.getLogger(Foo.class)
  * 

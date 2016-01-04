@@ -28,15 +28,34 @@ import java.util.Spliterators;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
+/**
+ * Additional Java 8 stream helpers.
+ * 
+ * @author mikepersonick
+ */
 public class Streams {
 
+    /**
+     * Obtain a Java 8 stream from an iterator.  If the iterator happens to
+     * implement AutoCloseable (e.g. {@link CloseableIterator}), the stream's 
+     * onClose behavior will close the iterator.  Thus it is important to
+     * always close the returned stream, or use within a try-with-resources:
+     * <p/>
+     * <pre>
+     * try (Stream<Object> s = Streams.of(it)) {
+     *     // do something with s
+     * } // auto-close
+     * </pre>
+     *
+     */
     public static final <T> Stream<T> of(final Iterator<T> it) {
-        return StreamSupport.stream(
+        final Stream<T> s = StreamSupport.stream(
                 Spliterators.spliteratorUnknownSize(it, Spliterator.ORDERED), false);
-    }
-    
-    public static final <T> Stream<T> of(final CloseableIterator<T> it) {
-        return of((Iterator<T>) it).onClose(() -> it.close());
+        if (it instanceof AutoCloseable) {
+            final AutoCloseable closeable = (AutoCloseable) it;
+            s.onClose(() -> Code.wrapThrow(() -> closeable.close()));
+        }
+        return s;
     }
     
 }

@@ -31,17 +31,30 @@ import org.openrdf.model.vocabulary.RDF;
 import org.openrdf.model.vocabulary.RDFS;
 
 import com.bigdata.rdf.internal.XSD;
-import com.bigdata.rdf.internal.impl.literal.PackedLongIV;
 import com.bigdata.rdf.sail.RDRHistory;
+import com.blazegraph.gremlin.internal.ListIndexExtension;
 
 /**
  * Factory for converting Tinkerpop data (element ids, property names/values)
- * to RDF values (URIs, Literals) and back again. 
+ * to RDF values (URIs, Literals) and back again.  This interface comes with
+ * reasonable default behavior for all methods.  It can be overridden to give
+ * an application a custom look and feel for the RDF values used to represent
+ * the property graph.
  * 
  * @author mikepersonick
  */
 public interface BlazeValueFactory {
 
+    /**
+     * Default instance.
+     */
+    public static final BlazeValueFactory INSTANCE = new BlazeValueFactory() {};
+
+    /**
+     * Some default constants.
+     * 
+     * @author mikepersonick
+     */
     public interface Defaults {
         
         /**
@@ -59,47 +72,11 @@ public interface BlazeValueFactory {
          */
         URI VALUE = RDF.VALUE;
         
-        URI LI_DATATYPE = PackedLongIV.PACKED_LONG;
+        /**
+         * Datatype URI for list index for Cardinality.list vertex properties. 
+         */
+        URI LI_DATATYPE = ListIndexExtension.DATATYPE;
         
-        URI HISTORY_ADDED = RDRHistory.Vocab.ADDED;
-        
-        URI HISTORY_REMOVED = RDRHistory.Vocab.REMOVED;
-        
-//        /**
-//         * Default label for vertices.
-//         */
-//        String VERTEX_LABEL = "Vertex";
-        
-//        /**
-//         * URI used to represent a Vertex.
-//         */
-//        URI VERTEX = new URIImpl("blaze:Vertex");
-        
-//        /**
-//         * Default label for edges.
-//         */
-//        String EDGE_LABEL = "Edge";
-        
-//        /**
-//         * URI used to represent a Edge.
-//         */
-//        URI EDGE = new URIImpl("blaze:Edge");
-        
-//        /**
-//         * Template for stamping vertex URIs (blaze:vertex:type:id).
-//         */
-//        String VERTEX_URI_TEMPLATE = NAMESPACE + ":vertex:%type:%id";
-//
-//        /**
-//         * Template for stamping edge URIs (blaze:edge:type:id).
-//         */
-//        String EDGE_URI_TEMPLATE = NAMESPACE + ":edge:%type:%id";
-//
-//        /**
-//         * Template for stamping type URIs (blaze:type:type).
-//         */
-//        String TYPE_URI_TEMPLATE = NAMESPACE + ":type:%type";
-
         /**
          * Template for stamping type element URIs (blaze:id).
          */
@@ -117,70 +94,108 @@ public interface BlazeValueFactory {
 
     }
     
+    /**
+     * URI used for element labels.
+     * 
+     * @see {@link Defaults#LABEL}
+     * 
+     * @return
+     *          URI used for element labels.
+     */
     default URI label() {
         return Defaults.LABEL;
     }
     
+    /**
+     * URI used for Cardinality.list property values.
+     * 
+     * @see {@link Defaults#VALUE}
+     * 
+     * @return
+     *          URI used for Cardinality.list property values.
+     */
     default URI value() {
         return Defaults.VALUE;
     }
     
+    /**
+     * URI used for Cardinality.list list index datatype.
+     * 
+     * @see {@link Defaults#LI_DATATYPE}
+     * 
+     * @return
+     *          URI used for Cardinality.list list index datatype.
+     */
     default URI liDatatype() {
         return Defaults.LI_DATATYPE;
     }
     
+    /**
+     * URI used for history.  Only reason to override this is if a different
+     * history implementation is used.
+     * 
+     * @see {@link RDRHistory}
+     * 
+     * @return
+     *          URI used for history.
+     */
     default URI historyAdded() {
-        return Defaults.HISTORY_ADDED;
+        return RDRHistory.Vocab.ADDED;
     }
     
+    /**
+     * URI used for history.  Only reason to override this is if a different
+     * history implementation is used.
+     * 
+     * @see {@link RDRHistory}
+     * 
+     * @return
+     *          URI used for history.
+     */
     default URI historyRemoved() {
-        return Defaults.HISTORY_REMOVED;
+        return RDRHistory.Vocab.REMOVED;
     }
     
-//    default URI getVertexURI() {
-//        return Defaults.VERTEX;
-//    }
-    
-//    default String getVertexLabel() {
-//        return Defaults.VERTEX_LABEL;
-//    }
-    
-//    default URI getEdgeURI() {
-//        return Defaults.EDGE;
-//    }
-    
-//    default String getEdgeLabel() {
-//        return Defaults.EDGE_LABEL;
-//    }
-    
-//    default URI toVertexURI(final String id, final String type) {
-//        return new URIImpl(String.format(Defaults.VERTEX_URI_TEMPLATE, type, id));
-//    }
-//    
-//    default URI toEdgeURI(final String id, final String type) {
-//        return new URIImpl(String.format(Defaults.EDGE_URI_TEMPLATE, type, id));
-//    }
-    
-//    default URI elementURI(final String id, final String label) {
-//        return new URIImpl(String.format(Defaults.ELEMENT_URI_TEMPLATE, label, id));
-//    }
-    
+    /**
+     * Convert an element id into an RDF URI.
+     * <p/>
+     * Default behavior is to prepend the <blaze:> namespace to the id.
+     * 
+     * @param id
+     *          property graph element id
+     * @return
+     *          RDF URI representation
+     */
     default URI elementURI(final String id) {
         return new URIImpl(String.format(Defaults.ELEMENT_URI_TEMPLATE, id));
     }
     
+    /**
+     * Convert an property key into an RDF URI.
+     * <p/>
+     * Default behavior is to prepend the <blaze:> namespace to the id.
+     * 
+     * @param key
+     *          property graph property key
+     * @return
+     *          RDF URI representation
+     */
     default URI propertyURI(final String key) {
         return new URIImpl(String.format(Defaults.PROPERTY_URI_TEMPLATE, key));
     }
     
+    /**
+     * Convert an RDF URI (element id or property key) back into a string.
+     * 
+     * @param uri
+     *          RDF representation of an element id or property key
+     * @return
+     *          property graph (string) representation
+     */
     default String fromURI(final URI uri) {
         final String s = uri.stringValue();
         return s.substring(s.lastIndexOf(':')+1);
     }
-    
-//    default URI toTypeURI(final String type) {
-//        return new URIImpl(String.format(Defaults.TYPE_URI_TEMPLATE, type));
-//    }
     
     /**
      * Create a datatyped literal from a blueprints property value.
@@ -189,13 +204,6 @@ public interface BlazeValueFactory {
      */
     default Literal toLiteral(final Object value) {
 
-//      /*
-//       * Need to handle this better.
-//       */
-//      if (value instanceof Collection) {
-//          return vf.createLiteral(Arrays.toString(((Collection<?>) value).toArray()));
-//      }
-        
         final ValueFactory vf = Defaults.VF;
         
         if (value instanceof Float) {
@@ -212,7 +220,7 @@ public interface BlazeValueFactory {
             return vf.createLiteral((Short) value);
         } else if (value instanceof Byte) {
             return vf.createLiteral((Byte) value);
-        } else if (value instanceof String) { // treat as string by default
+        } else if (value instanceof String) { 
             return vf.createLiteral((String) value);
         } else {
             throw new IllegalArgumentException(String.format("not supported: %s", value));

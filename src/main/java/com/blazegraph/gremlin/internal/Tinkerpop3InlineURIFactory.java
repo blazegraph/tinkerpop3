@@ -20,10 +20,22 @@ You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
-package com.blazegraph.gremlin.structure;
+package com.blazegraph.gremlin.internal;
 
-public class DefaultBlazeValueFactory implements BlazeValueFactory {
+import com.bigdata.rdf.internal.InlineURIFactory;
+import com.bigdata.rdf.internal.MultipurposeIDHandler;
+import com.blazegraph.gremlin.structure.BlazeValueFactory;
 
-    public static final DefaultBlazeValueFactory INSTANCE = new DefaultBlazeValueFactory();
-    
+/**
+ * Use a multi-purpose inline URI factory that will auto-inline URIs
+ * in the <blaze:> namespace.
+ * 
+ * @author mikepersonick
+ */
+public class Tinkerpop3InlineURIFactory extends InlineURIFactory {
+
+    public Tinkerpop3InlineURIFactory() {
+        addHandler(new MultipurposeIDHandler(BlazeValueFactory.Defaults.NAMESPACE, 10));
+    }
+
 }

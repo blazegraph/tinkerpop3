@@ -32,7 +32,6 @@ import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty.Cardinality;
 
-import com.bigdata.rdf.store.AbstractTripleStore;
 import com.blazegraph.gremlin.structure.BlazeGraph.Match;
 import com.blazegraph.gremlin.util.LambdaLogger;
 
@@ -48,11 +47,17 @@ public class TestSearch extends TestBlazeGraph {
 //    }
 
     /**
-     * Make sure we can find all five kinds of properties: Edge, 
-     * Vertex (single/set), Vertex (list), VertexProperty (single/set), and
-     * VertexProperty (list).
+     * Make sure we can find all five kinds of properties:
+     * <p/>
+     * <pre>
+     * Edge -> Property
+     * Vertex -> VertexProperty(single/set)
+     * Vertex -> VertexProperty(list)
+     * VertexProperty(single/set) -> Property
+     * VertexProperty(list) -> Property
+     * </pre>
      */
-    public void testBasicSearch() {
+    public void testAllFiveKinds() {
         
         final BlazeVertex a = graph.addVertex(T.id, "a");
         final BlazeVertex b = graph.addVertex(T.id, "b");
@@ -86,4 +91,45 @@ public class TestSearch extends TestBlazeGraph {
         
     }
 
+    /**
+     * Test for Match.ANY/ALL/EXACT.
+     */
+    public void testMatchEnum() {
+        
+        final VertexProperty<String> any = graph.addVertex(T.id, "any").property(Cardinality.set, "key", "foo");
+        final VertexProperty<String> all = graph.addVertex(T.id, "all").property(Cardinality.set, "key", "foo bar");
+        final VertexProperty<String> exact = graph.addVertex(T.id, "exact").property(Cardinality.set, "key", "bar foo");
+        graph.commit();
+        
+        log.debug(() -> "\n"+graph.dumpStore());
+
+        {
+            final List<Property<String>> results = 
+                    graph.<String>search("bar foo", Match.ANY).collect();
+            log.debug(() -> results.stream());
+            assertEquals(3, results.size());
+            assertTrue(results.contains(any));
+            assertTrue(results.contains(all));
+            assertTrue(results.contains(exact));
+        }
+        
+        {
+            final List<Property<String>> results = 
+                    graph.<String>search("bar foo", Match.ALL).collect();
+            log.debug(() -> results.stream());
+            assertEquals(2, results.size());
+            assertTrue(results.contains(all));
+            assertTrue(results.contains(exact));
+        }
+        
+        {
+            final List<Property<String>> results = 
+                    graph.<String>search("bar foo", Match.EXACT).collect();
+            log.debug(() -> results.stream());
+            assertEquals(1, results.size());
+            assertTrue(results.contains(exact));
+        }
+        
+    }
+    
 }

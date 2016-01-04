@@ -24,25 +24,39 @@ package com.blazegraph.gremlin.structure;
 
 import java.util.Objects;
 
+import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.openrdf.model.Literal;
-import org.openrdf.model.Resource;
 
 import com.bigdata.rdf.model.BigdataURI;
 
-public abstract class AbstractBlazeElement implements BlazeElement {
+/**
+ * Abstract base class for {@link BlazeVertex} and {@link BlazeEdge}.
+ * 
+ * @author mikepersonick
+ */
+abstract class AbstractBlazeElement implements BlazeElement {
 
+    /**
+     * {@link BlazeGraph} instance this element belongs to.
+     */
     protected final BlazeGraph graph;
-    
-    protected final BigdataURI uri;
-    
-    protected final Literal label;
-    
+
+    /**
+     * The {@link BlazeValueFactory} provided by the graph for round-tripping
+     * values.
+     */
     protected final BlazeValueFactory vf;
     
-//    protected transient volatile boolean removed = false;
+    /**
+     * The URI representation of the element id.
+     */
+    protected final BigdataURI uri;
     
-//    protected transient Map<String, ? extends Property<?>> cachedProps = null;
+    /**
+     * The Literal representation of the element label.
+     */
+    protected final Literal label;
     
     AbstractBlazeElement(final BlazeGraph graph, final BigdataURI uri, 
             final Literal label) {
@@ -56,31 +70,55 @@ public abstract class AbstractBlazeElement implements BlazeElement {
         this.vf = graph.valueFactory();
     }
     
+    /**
+     * Return element id. Tinkerpop3 interface method.
+     * 
+     * @see {@link Element#id()}
+     */
     @Override
     public String id() {
         return vf.fromURI(uri);
     }
     
+    /**
+     * Return element label. Tinkerpop3 interface method.
+     * 
+     * @see {@link Element#label()}
+     */
     @Override
     public String label() {
         return (String) vf.fromLiteral(label);
     }
     
+    /**
+     * Return the RDF representation of the label.
+     * 
+     * @see {@link BlazeElement#rdfLabel()}
+     */
     @Override
     public Literal rdfLabel() {
         return label;
     }
 
+    /**
+     * Return the {@link BlazeGraph} instance.
+     */
     @Override
     public BlazeGraph graph() {
         return graph;
     }
     
+    /**
+     * Delegates to {@link ElementHelper#hashCode(Element)}
+     */
     @Override
     public int hashCode() {
         return ElementHelper.hashCode(this);
     }
 
+    /**
+     * Delegates to {@link ElementHelper#areEqual(Element, Object)}
+     */
     @Override
     public boolean equals(final Object object) {
         return ElementHelper.areEqual(this, object);

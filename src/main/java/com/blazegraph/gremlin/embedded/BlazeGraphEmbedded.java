@@ -22,9 +22,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 package com.blazegraph.gremlin.embedded;
 
+import java.util.Arrays;
 import java.util.Collection;
-import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -32,8 +31,10 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Future;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.apache.commons.configuration.BaseConfiguration;
 import org.apache.commons.configuration.Configuration;
 import org.apache.tinkerpop.gremlin.structure.Transaction;
 import org.apache.tinkerpop.gremlin.structure.util.AbstractThreadLocalTransaction;
@@ -42,7 +43,6 @@ import org.openrdf.query.BindingSet;
 import org.openrdf.query.GraphQueryResult;
 import org.openrdf.query.QueryLanguage;
 import org.openrdf.query.TupleQueryResult;
-import org.openrdf.repository.sail.SailQuery;
 
 import com.bigdata.bop.engine.IRunningQuery;
 import com.bigdata.bop.engine.QueryEngine;
@@ -73,8 +73,10 @@ import com.bigdata.rdf.sparql.ast.eval.AST2BOpUpdate;
 import com.bigdata.rdf.spo.ISPO;
 import com.bigdata.rdf.store.AbstractTripleStore;
 import com.bigdata.rdf.store.BigdataStatementIterator;
+import com.bigdata.relation.accesspath.AbstractArrayBuffer;
 import com.bigdata.striterator.ChunkedArrayIterator;
 import com.bigdata.util.MillisecondTimestampFactory;
+import com.blazegraph.gremlin.internal.BlazeSailListener;
 import com.blazegraph.gremlin.listener.BlazeGraphEdit;
 import com.blazegraph.gremlin.listener.BlazeGraphEdit.Action;
 import com.blazegraph.gremlin.listener.BlazeGraphListener;
@@ -82,19 +84,97 @@ import com.blazegraph.gremlin.structure.BlazeGraph;
 import com.blazegraph.gremlin.util.Code;
 import com.blazegraph.gremlin.util.LambdaLogger;
 
+/**
+ * An implementation of the tinkerpop3 API that uses an embedded SAIL repository
+ * instance (same JVM).
+ * <p/>
+ * Currently BlazeGraphEmbedded is the only concrete implementation of the
+ * Blazegraph Tinkerpop3 API. BlazeGraphEmbedded is backed by an embedded (same
+ * JVM) instance of Blazegraph. This puts the enterprise features of Blazegraph
+ * (high-availability, scale-out, etc.) out of reach for the 1.0 version of the
+ * TP3 integration, since those features are accessed via Blazegraph's
+ * client/server API. A TP3 integration with the client/server version of
+ * Blazegraph is reserved for a future blazegraph-tinkerpop release.
+ * <p/>
+ * Blazegraph's concurrency model is MVCC, which more or less lines up with
+ * Tinkerpop's Transaction model. When you open a BlazeGraphEmbedded instance,
+ * you are working with the unisolated (writer) view of the database. This view
+ * supports Tinkerpop Transactions, and reads are done against the unisolated
+ * connection, so uncommitted changes will be visible. A BlazeGraphEmbedded can
+ * be shared across multiple threads, but only one thread can have a Tinkerpop
+ * Transaction open at a time (other threads will be blocked until the
+ * transaction is closed). A TP3 Transaction is automatically opened on any read
+ * or write operation, and automatically closed on any commit or rollback
+ * operation. The Transaction can also be closed manually, which you will need
+ * to do after read operations to unblock other waiting threads.
+ * <p/>
+ * BlazegraphGraphEmbedded's database operations are thus single-threaded, but
+ * Blazegraph/MVCC allows for many concurrent readers in parallel with both the
+ * single writer and other readers. This is possible by opening a read-only view
+ * that will read against the last commit point on the database. The read-only
+ * view can be be accessed in parallel to the writer without any of the
+ * restrictions described above. To get a read-only snapshot, use the following
+ * pattern:
+ * <p/>
+ * <pre>
+ * final BlazeGraphEmbedded unisolated = ...; 
+ * final BlazeGraphReadOnly readOnly = unisolated.readOnlyConnection(); 
+ * try { 
+ *     // read operations against readOnly
+ * } finally { 
+ *     readOnly.close(); 
+ * }
+ * </pre>
+ * <p/>
+ * BlazeGraphReadOnly extends BlazeGraphEmbedded and thus offers all the same
+ * operations, except write operations will not be permitted
+ * (BlazeGraphReadOnly.tx() will throw an exception). You can open as many
+ * read-only views as you like, but we recommend you use a connection pool so as
+ * not to overtax system resources. Applications should be written with the
+ * one-writer many-readers paradigm front of mind.
+ * <p/>
+ * Important: Make sure to close the read-only view as soon as you are done with
+ * it.
+ * 
+ * @author mikepersonick
+ */
 public class BlazeGraphEmbedded extends BlazeGraph {
 
     private final transient static LambdaLogger log = LambdaLogger.getLogger(BlazeGraphEmbedded.class);
 
     static {
-        /*
+        /**
          * We do not want auto-commit for SPARQL Update.
          * 
          * TODO FIXME Make this a configurable property.
          */
         AST2BOpUpdate.AUTO_COMMIT = false;
     }
+
+    /**
+     * Open a BlazeGraphEmbedded (unisolated) instance wrapping the provided
+     * SAIL repository with no additional configuration options.
+     * 
+     * @param repo
+     *          an open and initialized repository
+     * @return
+     *          BlazeGraphEmbedded instance
+     */
+    public static BlazeGraphEmbedded open(final BigdataSailRepository repo) {
+        return open(repo, new BaseConfiguration());
+    }
     
+    /**
+     * Open a BlazeGraphEmbedded (unisolated) instance wrapping the provided
+     * SAIL repository and using the supplied configuration.
+     * 
+     * @return
+     *          an open and initialized repository
+     * @param config
+     *          additional configuration
+     * @return
+     *          instance
+     */
     public static BlazeGraphEmbedded open(final BigdataSailRepository repo,
             final Configuration config) {
         Objects.requireNonNull(repo);
@@ -106,16 +186,17 @@ public class BlazeGraphEmbedded extends BlazeGraph {
          * Grab the last commit time and also check for clock skew.
          */
         final long lastCommitTime = lastCommitTime(repo);
-        config.setProperty(BlazeGraph.Options.LAST_COMMIT_TIME, lastCommitTime);
+        config.setProperty(BlazeGraph.Options.LIST_INDEX_FLOOR, lastCommitTime);
 
         return new BlazeGraphEmbedded(repo, config);
     }
     
-    /*
+    /**
      * Take a quick peek at the last commit time on the supplied journal file.
      * If it's ahead of our system time, then use that last commit time as a
      * lower bound on blaze's transaction timestamps. Otherwise just use the
-     * system time as usual.
+     * system time as usual.  Guards against clock skew (sharing journals 
+     * between machines with different clock times).
      */
     protected static long lastCommitTime(final BigdataSailRepository repo) {
 
@@ -166,54 +247,111 @@ public class BlazeGraphEmbedded extends BlazeGraph {
 
     }
     
-
-    
-
+    /**
+     * Embedded SAIL repository.
+     */
     protected final BigdataSailRepository repo;
     
+    /**
+     * Graph listeners.
+     * 
+     * @see {@link BlazeGraphListener}
+     */
     protected final List<BlazeGraphListener> listeners = new CopyOnWriteArrayList<>();
     
+    /**
+     * Tinkerpop3 transaction objects - manages use of the unisolated
+     * BigdataSailRepositoryConnection.
+     */
     private final BlazeTransaction tx = new BlazeTransaction();
 
+    /**
+     * Listen for change events from the SAIL (RDF), convert to PG data 
+     * ({@link BlazeGraphEdit}s), forward notifications to 
+     * {@link BlazeGraphListener}s.
+     */
     protected final ChangeLogTransformer listener = new ChangeLogTransformer();
     
-    BlazeGraphEmbedded(final BigdataSailRepository repo,
+    /**
+     * Hidden constructor - use {@link #open(BigdataSailRepository, Configuration)}.
+     * 
+     * @return
+     *          an open and initialized repository
+     * @param config
+     *          additional configuration
+     */
+    protected BlazeGraphEmbedded(final BigdataSailRepository repo,
             final Configuration config) {
         super(config);
         
         this.repo = repo;
     }
     
+    /**
+     * Open a read-only view of the data at the last commit point.  The read view
+     * can be used for read operations in parallel with the write view (this
+     * view) and other read views.  Read views do not supports Tinkerpop
+     * Transactions or write operations.
+     * <p/>
+     * These should be bounded in number by your application and always
+     * closed when done using them.
+     *  
+     * @return
+     *      a read-only view on the last commit point
+     */
     public BlazeGraphReadOnly readOnlyConnection() {
-        if (closed) throw new IllegalStateException();
+        if (closed) throw Exceptions.alreadyClosed();
         
         final BigdataSailRepositoryConnection cxn =
                 Code.wrapThrow(() -> repo.getReadOnlyConnection());
         return new BlazeGraphReadOnly(repo, cxn, config);
     }
     
+    /**
+     * Return the {@link BlazeTransaction} instance.
+     */
     @Override
     public BlazeTransaction tx() {
-        if (closed) throw new IllegalStateException();
+        if (closed) throw Exceptions.alreadyClosed();
         
         return tx;
     }
     
+    /**
+     * Tinkerpop3 Transaction object.  Wraps access to the unsiolated SAIL
+     * connection in a thread local.  Access will be re-entrant, but the 
+     * unisolated connection cannot be shared across multiple threads.  Threads
+     * attempting to access the unisolated SAIL connection (via tx().open(),
+     * which happens automatically on any write or read operation) will be
+     * blocked by the connection owner thread until that thread closes it (via
+     * tx().close(), which happens automatically on any commit or rollback
+     * operation). 
+     * 
+     * @author mikepersonick
+     */
     public class BlazeTransaction extends AbstractThreadLocalTransaction {
 
-        protected final 
+        private final 
         ThreadLocal<BigdataSailRepositoryConnection> tlTx = 
                 ThreadLocal.withInitial(() -> null);
         
-        public BlazeTransaction() {
+        private BlazeTransaction() {
             super(BlazeGraphEmbedded.this);
         }
 
+        /**
+         * True if this thread has the unisolated connection open.
+         */
         @Override
         public boolean isOpen() {
             return (tlTx.get() != null);
         }
         
+        /**
+         * Grab the unisolated SAIL connection and attach the {@link ChangeLogTransformer}
+         * to it.  This operation will block if the unisolated connection is
+         * being held open by another thread.
+         */
         @Override
         protected void doOpen() {
             Code.wrapThrow(() -> {
@@ -224,6 +362,9 @@ public class BlazeGraphEmbedded extends BlazeGraph {
             });
         }
 
+        /**
+         * Commit and close the unisolated connection (if open).
+         */
         @Override
         protected void doCommit() throws TransactionException {
             final BigdataSailRepositoryConnection cxn = tlTx.get();
@@ -242,6 +383,9 @@ public class BlazeGraphEmbedded extends BlazeGraph {
             }
         }
 
+        /**
+         * Rollback and close the unisolated connection (if open).
+         */
         @Override
         protected void doRollback() throws TransactionException {
             final BigdataSailRepositoryConnection cxn = tlTx.get();
@@ -259,6 +403,10 @@ public class BlazeGraphEmbedded extends BlazeGraph {
             }
         }
 
+        /**
+         * Close the unisolated connection (if open), releasing it for use
+         * by other threads.
+         */
         @Override
         protected void doClose() {
             super.doClose();
@@ -268,16 +416,29 @@ public class BlazeGraphEmbedded extends BlazeGraph {
             }
         }
         
+        /**
+         * Internal close operation.  Remove the change listener, remove
+         * the connection from the {@link ThreadLocal}, close the connection.
+         */
         private void close(final BigdataSailRepositoryConnection cxn) {
             cxn.removeChangeLog(listener);
             tlTx.remove();
             Code.wrapThrow(() -> cxn.close());
         }
         
+        /**
+         * Direct access to the unisolated connection.  May return null if the
+         * connection has not been opened yet by this thread.
+         * 
+         * @return unisolated {@link BigdataSailRepositoryConnection}
+         */
         public BigdataSailRepositoryConnection cxn() {
             return tlTx.get();
         }
         
+        /**
+         * Flush the statement buffers to the indices without committing.
+         */
         public void flush() {
             final BigdataSailRepositoryConnection cxn = tlTx.get();
             if (cxn != null) {
@@ -287,12 +448,32 @@ public class BlazeGraphEmbedded extends BlazeGraph {
         
     }
     
-    private class ChangeLogTransformer implements IChangeLog {
+    /**
+     * Listen for change events from the SAIL (RDF), convert to PG data 
+     * ({@link BlazeGraphEdit}s), forward notifications to 
+     * {@link BlazeGraphListener}s.
+     */
+    private class ChangeLogTransformer implements BlazeSailListener {
         
         /**
-         * We need to batch and materialize these.
+         * We need to buffer and materialize these, since remove events come in
+         * with unmaterialized values.  Default buffer size is 1000.
          */
-        private final List<IChangeRecord> removes = new LinkedList<>();
+        private final AbstractArrayBuffer<IChangeRecord> records = 
+                new AbstractArrayBuffer<IChangeRecord>(1000, IChangeRecord.class, null) {
+
+            @Override
+            protected long flush(final int n, final IChangeRecord[] a) {
+                /*
+                 * Materialize, notify, close.
+                 */
+                try (Stream<IChangeRecord> s = materialize(n, a)) {
+                    s.forEach(ChangeLogTransformer.this::notify);
+                }
+                return n;
+            }
+
+        };
         
         /**
          * Changed events coming from bigdata.
@@ -305,20 +486,16 @@ public class BlazeGraphEmbedded extends BlazeGraph {
             /*
              * Watch out for history change events.
              */
-            
             if (record.getStatement().getStatementType() == StatementEnum.History) {
                 return;
             }
             
             /*
-             * Adds come in already materialized. Removes do not. Batch and
-             * materialize at commit or abort notification.
+             * Adds come in already materialized. Removes do not. We batch and
+             * materialize removes in bulk.
              */
-            if (record.getChangeAction() == ChangeAction.REMOVED) {
-                removes.add(record);
-            } else {
-                notify(record);
-            }
+            records.add(record);
+            
         }
         
         /**
@@ -328,7 +505,12 @@ public class BlazeGraphEmbedded extends BlazeGraph {
          *          Bigdata change record.
          */
         protected void notify(final IChangeRecord record) {
-            // some kinds of edits will be ignored
+            if (listeners.isEmpty())
+                return;
+
+            /*
+             * Some RDF statements do not map to PG graph edits.
+             */
             toGraphEdit(record).ifPresent(edit ->
                 listeners.forEach(listener -> 
                     listener.graphEdited(edit, record.toString()))
@@ -336,12 +518,13 @@ public class BlazeGraphEmbedded extends BlazeGraph {
         }
         
         /**
-         * Turn a bigdata change record into a graph edit.
+         * Turn a bigdata change record into a graph edit.  Some RDF statements
+         * do not map to PG graph edits.
          * 
          * @param record
-         *          Bigdata change record
+         *          Blaze RDF change event
          * @return
-         *          graph edit
+         *          PG graph edit
          */
         protected Optional<BlazeGraphEdit> toGraphEdit(final IChangeRecord record) {
             
@@ -357,70 +540,59 @@ public class BlazeGraphEmbedded extends BlazeGraph {
                 return Optional.empty();
             }
             
-            return transforms.graphAtom.apply(record.getStatement())
+            return graphAtomTransform().apply(record.getStatement())
                         .map(atom -> new BlazeGraphEdit(action, atom));
             
         }
         
         /**
-         * Materialize a batch of change records.
+         * Materialize a batch of change records.  You MUST close this stream
+         * when done.
          * 
-         * @param records
-         *          Bigdata change records
+         * @param n
+         *          number of valid elements in the array
+         * @param a
+         *          array of {@link IChangeRecord}s
          * @return
          *          Same records with materialized values
          */
-        protected List<IChangeRecord> materialize(final List<IChangeRecord> records) {
+        protected Stream<IChangeRecord> materialize(final int n, final IChangeRecord[] a) {
             
-            try {
-                final AbstractTripleStore db = cxn().getTripleStore();
-    
-                final List<IChangeRecord> materialized = new LinkedList<IChangeRecord>();
-    
-                // collect up the ISPOs out of the unresolved change records
-                final ISPO[] spos = new ISPO[records.size()];
-                int i = 0;
-                for (IChangeRecord rec : records) {
-                    spos[i++] = rec.getStatement();
-                }
-    
-                // use the database to resolve them into BigdataStatements
-                final BigdataStatementIterator it = db
-                        .asStatementIterator(new ChunkedArrayIterator<ISPO>(i,
-                                spos, null/* keyOrder */));
-    
-                /*
-                 * the BigdataStatementIterator will produce BigdataStatement
-                 * objects in the same order as the original ISPO array
-                 */
-                for (IChangeRecord rec : records) {
-                    final BigdataStatement stmt = it.next();
-                    materialized.add(new ChangeRecord(stmt, rec.getChangeAction()));
-                }
-    
-                return materialized;
-            } catch (RuntimeException ex) {
-                throw ex;
-            } catch (Exception ex) {
-                throw new RuntimeException(ex);
+            final AbstractTripleStore db = cxn().getTripleStore();
+
+            /*
+             * Collect up unmaterialized ISPOs out of the change records
+             * (only the removes are unmaterialized).
+             */
+            int nRemoves = 0;
+            final ISPO[] spos = new ISPO[n];
+            for (int i = 0; i < n; i++) {
+                if (a[i].getChangeAction() == ChangeAction.REMOVED)
+                    spos[nRemoves++] = a[i].getStatement();
             }
+
+            /*
+             * Use the database to resolve them into BigdataStatements
+             */
+            final BigdataStatementIterator it = db
+                    .asStatementIterator(new ChunkedArrayIterator<ISPO>(nRemoves,
+                            spos, null/* keyOrder */));
+
+            /*
+             * Stream the records, replacing removes with materialized versions
+             * of same.  We can do this because the iterator above is order-
+             * preserving.
+             */
+            return Arrays.stream(a, 0, n).onClose(() -> it.close())
+                     .map(r -> {
+                         if (r.getChangeAction() == ChangeAction.REMOVED) {
+                             final BigdataStatement stmt = it.next();
+                             return new ChangeRecord(stmt, ChangeAction.REMOVED);
+                         } else {
+                             return r;
+                         }
+                     });
             
-        }
-    
-        /**
-         * Notification of transaction beginning.
-         */
-        @Override
-        public void transactionBegin() {
-            listeners.forEach(BlazeGraphListener::transactionBegin);
-        }
-    
-        /**
-         * Notification of transaction preparing for commit.
-         */
-        @Override
-        public void transactionPrepare() {
-            listeners.forEach(BlazeGraphListener::transactionPrepare);
         }
     
         /**
@@ -429,10 +601,9 @@ public class BlazeGraphEmbedded extends BlazeGraph {
         @Override
         public void transactionCommited(final long commitTime) {
             if (listeners.isEmpty()) {
-                removes.clear();
-                return;
+                records.reset();
             } else {
-                notifyRemoves();
+                records.flush();
                 listeners.forEach(l -> l.transactionCommited(commitTime));
             }
         }
@@ -443,58 +614,71 @@ public class BlazeGraphEmbedded extends BlazeGraph {
         @Override
         public void transactionAborted() {
             if (listeners.isEmpty()) {
-                removes.clear();
-                return;
+                records.reset();
             } else {
-                notifyRemoves();
+                records.flush();
                 listeners.forEach(BlazeGraphListener::transactionAborted);
             }
         }
         
         @Override
-        public void close() { }
-        
-        /**
-         * Materialize and notify listeners of the remove events.
-         */
-        protected void notifyRemoves() {
-            if (listeners.size() > 0) {
-                final List<IChangeRecord> removes = materialize(this.removes);
-                this.removes.clear();
-                removes.forEach(this::notify);
-            } else {
-                this.removes.clear();
-            }
+        public void close() { 
+            records.reset();
         }
-    
+        
     }
     
+    /**
+     * Return the unisolated SAIL connection.  Automatically opens the 
+     * Tinkerpop3 Transaction if not already open.
+     */
     @Override
     public BigdataSailRepositoryConnection cxn() {
-        if (closed) throw new IllegalStateException();
+        if (closed) throw Exceptions.alreadyClosed();
 
         tx.readWrite();
         return tx.cxn();
     }
 
+    /**
+     * Pass through to tx().commit().
+     * 
+     * @see {@link BlazeTransaction#commit}.
+     */
     public void commit() {
-        if (closed) throw new IllegalStateException();
+        if (closed) throw Exceptions.alreadyClosed();
         
         tx().commit();
     }
 
+    /**
+     * Pass through to tx().rollbakc().
+     * 
+     * @see {@link BlazeTransaction#rollback}.
+     */
     public void rollback() {
-        if (closed) throw new IllegalStateException();
+        if (closed) throw Exceptions.alreadyClosed();
         
         tx().rollback();
     }
 
+    /**
+     * Pass through to tx().flush().
+     * 
+     * @see {@link BlazeTransaction#flush}.
+     */
     public void flush() {
-        if (closed) throw new IllegalStateException();
+        if (closed) throw Exceptions.alreadyClosed();
         
         tx().flush();
     }
 
+    /**
+     * Close the unisolated connection if open and close the repository.  Default
+     * close behavior is to roll back any uncommitted changes.
+     * 
+     * @see {@link Transaction.CLOSE_BEHAVIOR}
+     */
     protected volatile boolean closed = false;
     @Override
     public synchronized void close() {
@@ -506,154 +690,196 @@ public class BlazeGraphEmbedded extends BlazeGraph {
         closed = true;
     }
     
+    /**
+     * Add a {@link BlazeGraphListener}.
+     * 
+     * @param listener the listener
+     */
     public void addListener(final BlazeGraphListener listener) {
         this.listeners.add(listener);
     }
 
+    /**
+     * Remove a {@link BlazeGraphListener}.
+     * 
+     * @param listener the listener
+     */
     public void removeListener(final BlazeGraphListener listener) {
         this.listeners.remove(listener);
     }
 
-//    public BigdataSailRepository getRepository() {
-//        return repo;
-//    }
-    
+    /**
+     * Return the RDF value factory.
+     * 
+     * @see {@link BigdataValueFactory}
+     */
     public BigdataValueFactory rdfValueFactory() {
         return (BigdataValueFactory) repo.getValueFactory();
     }
     
-    public QueryEngine getQueryEngine() {
+    /**
+     * Return the Sparql query engine.
+     */
+    private QueryEngine getQueryEngine() {
         final IIndexManager ndxManager = getIndexManager();
         final QueryEngine queryEngine = (QueryEngine) 
                 QueryEngineFactory.getInstance().getQueryController(ndxManager);
         return queryEngine;
     }
 
-    public IIndexManager getIndexManager() {
+    /**
+     * Return the database index manager.
+     */
+    private IIndexManager getIndexManager() {
         return repo.getDatabase().getIndexManager();
     }
 
+    /**
+     * {@inheritDoc}
+     * 
+     * Logs the query at INFO and logs the optimized AST at TRACE.
+     */
     @Override
     protected Stream<BindingSet> _select( 
-            final String queryStr, final String externalQueryId) {
+            final String queryStr, final String extQueryId) {
 
         logQuery(queryStr);
         return Code.wrapThrow(() -> {
             final BigdataSailTupleQuery query = (BigdataSailTupleQuery) 
                     cxn().prepareTupleQuery(QueryLanguage.SPARQL, queryStr);
-            final UUID queryId = setupQuery(query,
-                        query.getASTContainer(), QueryType.CONSTRUCT,
-                        externalQueryId);
+            setMaxQueryTime(query);
+            final UUID queryId = setupQuery(query.getASTContainer(), 
+                                            QueryType.SELECT, extQueryId);
             
             sparqlLog.trace(() -> "optimized AST:\n"+query.optimize());
             
+            /*
+             * Result is closed automatically by GraphStreamer.
+             */
             final TupleQueryResult result = query.evaluate();
-            final Optional<Code> onClose = 
+            final Optional<Runnable> onClose = 
                     Optional.of(() -> finalizeQuery(queryId));
             return new GraphStreamer<>(result, onClose).stream();
-//        } catch (Exception ex) {
-//            /*
-//             * If there is an exception while preparing/evaluating the
-//             * query (before we get a TupleQueryResult) or during construction
-//             * of the closeable iterator / stream then we must close the read 
-//             * connection ourselves.
-//             */
-//            closeRead(cxn);
-//            if (ex instanceof RuntimeException) {
-//                throw (RuntimeException) ex;
-//            } else {
-//                throw new RuntimeException(ex);
-//            }
         });
         
     }
     
+    /**
+     * {@inheritDoc}
+     * 
+     * Logs the query at INFO and logs the optimized AST at TRACE.
+     */
     @Override
     protected Stream<Statement> _project( 
-            final String queryStr, final String externalQueryId) {
+            final String queryStr, final String extQueryId) {
         
         logQuery(queryStr);
         return Code.wrapThrow(() -> {
             final BigdataSailGraphQuery query = (BigdataSailGraphQuery) 
                     cxn().prepareGraphQuery(QueryLanguage.SPARQL, queryStr);
-            final UUID queryId = setupQuery(query,
-                        query.getASTContainer(), QueryType.CONSTRUCT,
-                        externalQueryId);
+            setMaxQueryTime(query);
+            final UUID queryId = setupQuery(query.getASTContainer(), 
+                                            QueryType.CONSTRUCT, extQueryId);
         
             sparqlLog.trace(() -> "optimized AST:\n"+query.optimize());
         
+            /*
+             * Result is closed automatically by GraphStreamer.
+             */
             final GraphQueryResult result = query.evaluate();
-            final Optional<Code> onClose = 
+            final Optional<Runnable> onClose = 
                     Optional.of(() -> finalizeQuery(queryId));
             return new GraphStreamer<>(result, onClose).stream();
-//        } catch (Exception ex) {
-//            /*
-//             * If there is an exception while preparing/evaluating the
-//             * query (before we get a GraogQueryResult) or during construction
-//             * of the closeable iterator / stream then we must close the read 
-//             * connection ourselves.
-//             */
-//            closeRead(cxn);
-//            if (ex instanceof RuntimeException) {
-//                throw (RuntimeException) ex;
-//            } else {
-//                throw new RuntimeException(ex);
-//            }
         });
         
     }
     
+    /**
+     * {@inheritDoc}
+     * 
+     * Logs the query at INFO.
+     */
     @Override
     protected boolean _ask( 
-            final String queryStr, final String externalQueryId) {
+            final String queryStr, final String extQueryId) {
         
         logQuery(queryStr);
         return Code.wrapThrow(() -> { /* try */ 
             final BigdataSailBooleanQuery query = (BigdataSailBooleanQuery) 
                     cxn().prepareBooleanQuery(QueryLanguage.SPARQL, queryStr);
-            final UUID queryId = setupQuery(query,
-                        query.getASTContainer(), QueryType.CONSTRUCT,
-                        externalQueryId);
+            setMaxQueryTime(query);
+            final UUID queryId = setupQuery(query.getASTContainer(), 
+                                            QueryType.ASK, extQueryId);
         
 //            sparqlLog.trace(() -> "optimized AST:\n"+query.optimize());
         
-            final boolean result = query.evaluate();
-            finalizeQuery(queryId);
-            return result;
-//        }, () -> { /* finally */
-//            /*
-//             * With ask we close the read connection no matter what.
-//             */
-//            closeRead(cxn);
+            try {
+                return query.evaluate();
+            } finally {
+                finalizeQuery(queryId);
+            }
         });
         
     }
     
+    /**
+     * {@inheritDoc}
+     * 
+     * Logs the query at INFO.
+     */
     @Override
     protected void _update( 
-            final String queryStr, final String externalQueryId) {
+            final String queryStr, final String extQueryId) {
         
         logQuery(queryStr);
         Code.wrapThrow(() -> {
-            final BigdataSailUpdate update = (BigdataSailUpdate) 
+            final BigdataSailUpdate query = (BigdataSailUpdate) 
                     cxn().prepareUpdate(QueryLanguage.SPARQL, queryStr);
-            update.execute();
+            final UUID queryId = 
+                    setupQuery(query.getASTContainer(), 
+                               null /* QueryType.UPDATE */, extQueryId);
+            
+            try {
+                query.execute();
+            } finally {
+                finalizeQuery(queryId);
+            }
         });
         
     }
     
+    /**
+     * Chop queries at a max length for logging.
+     */
     private void logQuery(final String queryStr) {
         sparqlLog.info(() -> "query:\n"+ 
-                (queryStr.length() <= SPARQL_LOG_MAX ? 
-                        queryStr : queryStr.substring(0, SPARQL_LOG_MAX)+" ..."));
+                (queryStr.length() <= sparqlLogMax ? 
+                        queryStr : queryStr.substring(0, sparqlLogMax)+" ..."));
     }
-    
+
+    /**
+     * Dump all the statements in the store to a String.  Bypasses the SAIL,
+     * so you must call {@link #flush()} to get an accurate picture.
+     */
     public String dumpStore() throws Exception {
         return repo.getDatabase().dumpStore().toString();
     }
     
+    /**
+     * Count all the statements in the store.  Bypasses the SAIL,
+     * so you must call {@link #flush()} to get an accurate picture.
+     */
     public long statementCount() throws Exception {
-        return repo.getDatabase().getStatementCount();
+        return repo.getDatabase().getStatementCount(true);
+    }
+
+    /**
+     * Count all the statements in the store including deleted statements.  
+     * Bypasses the SAIL, so you must call {@link #flush()} to get an accurate 
+     * picture.
+     */
+    public long historicalStatementCount() throws Exception {
+        return repo.getDatabase().getStatementCount(false);
     }
 
     ////////////////////////////////////////////////////////////////////////
@@ -669,12 +895,9 @@ public class BlazeGraphEmbedded extends BlazeGraph {
      * 
      * @param The connection.
      */
-    protected UUID setupQuery(
-            final SailQuery query, final ASTContainer astContainer,
+    private UUID setupQuery(final ASTContainer astContainer,
             final QueryType queryType, final String extId) {
 
-        setMaxQueryTime(query);
-        
         // Note the begin time for the query.
         final long begin = System.nanoTime();
 
@@ -731,7 +954,7 @@ public class BlazeGraphEmbedded extends BlazeGraph {
      * @return The {@link UUID} which will be associated with the
      *         {@link IRunningQuery} and never <code>null</code>.
      */
-    protected UUID setQueryId(final ASTContainer astContainer, UUID queryUuid) {
+    private UUID setQueryId(final ASTContainer astContainer, UUID queryUuid) {
 
         // Figure out the effective UUID under which the query will run.
         final String queryIdStr = astContainer.getQueryHint(QueryHints.QUERYID);
@@ -751,7 +974,7 @@ public class BlazeGraphEmbedded extends BlazeGraph {
      * @param queryId
      * @throws QueryCancelledException
      */
-    protected void finalizeQuery(final UUID queryId) throws QueryCancelledException {
+    private void finalizeQuery(final UUID queryId) throws QueryCancelledException {
 
         if (queryId == null)
             return;
@@ -799,21 +1022,17 @@ public class BlazeGraphEmbedded extends BlazeGraph {
     private static final 
     ConcurrentHashMap<UUID/* queryUuid */, RunningQuery> queries2 = new ConcurrentHashMap<>();
 
-    
-    public RunningQuery getQuery(final UUID queryUuid) {
+    /**
+     * Get a running query by internal query id.
+     */
+    private RunningQuery getQuery(final UUID queryUuid) {
         return queries2.get(queryUuid);
     }
 
-    public RunningQuery getQuery(String extQueryId) {
-        return queries.get(extQueryId);
-    }
-    
     /**
-     * 
      * Remove the query from the internal queues.
-     * 
      */
-    protected void tearDownQuery(UUID queryId) {
+    private void tearDownQuery(UUID queryId) {
         
         if (queryId != null) {
             
@@ -840,17 +1059,14 @@ public class BlazeGraphEmbedded extends BlazeGraph {
     
     /**
      * Helper method to determine if a query was cancelled.
-     * 
-     * @param queryId
-     * @return
      */
-    protected boolean isQueryCancelled(final UUID queryId) {
+    private boolean isQueryCancelled(final UUID queryId) {
 
         if (log.isDebugEnabled()) {
             log.debug(queryId);
         }
         
-        RunningQuery q = getQuery(queryId);
+        final RunningQuery q = getQuery(queryId);
 
         if (log.isDebugEnabled() && q != null) {
             log.debug(queryId + " isCancelled: " + q.isCancelled());
@@ -862,36 +1078,34 @@ public class BlazeGraphEmbedded extends BlazeGraph {
 
         return false;
     }
-    
-    public String runningQueriesToString()
-    {
-        final Collection<RunningQuery> queries = queries2.values();
-        
-        final Iterator<RunningQuery> iter = queries.iterator();
-        
-        final StringBuffer sb = new StringBuffer();
-    
-        while(iter.hasNext()){
-            final RunningQuery r = iter.next();
-            sb.append(r.getQueryUuid() + " : \n" + r.getExtQueryId());
-        }
-        
-        return sb.toString();
-        
+
+    /**
+     * Return a list of all running queries in string form.
+     */
+    public String runningQueriesToString() {
+        return queries2.values().stream()
+                .map(r -> r.getQueryUuid() + " : \n" + r.getExtQueryId())
+                .collect(Collectors.joining("\n"));
     }
     
+    /**
+     * Return a list of all running queries.
+     */
+    @Override
     public Collection<RunningQuery> getRunningQueries() {
-        final Collection<RunningQuery> queries = queries2.values();
-
-        return queries;
+        return queries2.values();
     }
 
+    /**
+     * Cancel a running query by internal id.
+     */
+    @Override
     public void cancel(final UUID queryId) {
         Objects.requireNonNull(queryId);
         
         QueryCancellationHelper.cancelQuery(queryId, this.getQueryEngine());
 
-        RunningQuery q = getQuery(queryId);
+        final RunningQuery q = getQuery(queryId);
 
         if(q != null) {
             //Set the status to cancelled in the internal queue.
@@ -899,10 +1113,10 @@ public class BlazeGraphEmbedded extends BlazeGraph {
         }
     }
 
-    public void cancel(final String uuid) {
-        cancel(UUID.fromString(uuid));
-    }
-
+    /**
+     * Cancel a running query.
+     */
+    @Override
     public void cancel(final RunningQuery rQuery) {
         if (rQuery != null) {
             final UUID queryId = rQuery.getQueryUuid();
@@ -918,5 +1132,5 @@ public class BlazeGraphEmbedded extends BlazeGraph {
     public void __tearDownUnitTest() {
         repo.getSail().__tearDownUnitTest();
     }
-
+    
 }

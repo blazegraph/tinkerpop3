@@ -23,19 +23,21 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 package com.blazegraph.gremlin.structure;
 
 import org.apache.tinkerpop.gremlin.structure.Graph.Features;
-import org.apache.tinkerpop.gremlin.structure.Graph;
-import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty.Cardinality;
-import org.apache.tinkerpop.gremlin.structure.util.FeatureDescriptor;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 
+/**
+ * The blazegraph-tinkerpop3 feature set.
+ * 
+ * @author mikepersonick
+ */
 public class BlazeGraphFeatures implements Features {
     
     public static final BlazeGraphFeatures INSTANCE = new BlazeGraphFeatures();
     
-    protected GraphFeatures graphFeatures = new BlazeGraphGraphFeatures();
-    protected VertexFeatures vertexFeatures = new BlazeVertexFeatures();
-    protected EdgeFeatures edgeFeatures = new BlazeEdgeFeatures();
+    private GraphFeatures graphFeatures = new Graph();
+    private VertexFeatures vertexFeatures = new Vertex();
+    private EdgeFeatures edgeFeatures = new Edge();
 
     private BlazeGraphFeatures() {
     }
@@ -60,13 +62,16 @@ public class BlazeGraphFeatures implements Features {
         return StringFactory.featureString(this);
     }
 
-    public class BlazeGraphGraphFeatures implements GraphFeatures {
+    public static class Graph implements GraphFeatures {
 
-        private VariableFeatures variableFeatures = new BlazeVariableFeatures();
-
-        private BlazeGraphGraphFeatures() {
-        }
+        public static final boolean SUPPORTS_PERSISTENCE = true;
+        public static final boolean SUPPORTS_TRANSACTIONS = true;
+        public static final boolean SUPPORTS_THREADED_TRANSACTIONS = false;
+        public static final boolean SUPPORTS_CONCURRENT_ACCESS = true;
+        public static final boolean SUPPORTS_COMPUTER = false;
         
+        private VariableFeatures variableFeatures = new Variable();
+
         @Override
         public VariableFeatures variables() {
             return variableFeatures;
@@ -74,17 +79,17 @@ public class BlazeGraphFeatures implements Features {
 
         @Override
         public boolean supportsPersistence() {
-            return true;
+            return SUPPORTS_PERSISTENCE;
         }
 
         @Override
         public boolean supportsTransactions() {
-            return true;
+            return SUPPORTS_TRANSACTIONS;
         }
 
         @Override
         public boolean supportsThreadedTransactions() {
-            return false;
+            return SUPPORTS_THREADED_TRANSACTIONS;
         }
         
         /**
@@ -92,74 +97,83 @@ public class BlazeGraphFeatures implements Features {
          */
         @Override
         public boolean supportsConcurrentAccess() {
-            return true;
+            return SUPPORTS_CONCURRENT_ACCESS;
         }
 
         @Override
         public boolean supportsComputer() {
-            return false;
+            return SUPPORTS_COMPUTER;
         }
 
     }
     
-    public class BlazeVariableFeatures extends BlazeDatatypeFeatures 
+    public static class Variable extends Datatype 
             implements VariableFeatures {
 
-        private BlazeVariableFeatures() {
-        }
-        
+        public static final boolean SUPPORTS_VARIABLES = false;
+        public static final boolean SUPPORTS_BOOLEAN_VALUES = false;
+        public static final boolean SUPPORTS_BYTE_VALUES = false;
+        public static final boolean SUPPORTS_DOUBLE_VALUES = false;
+        public static final boolean SUPPORTS_FLOAT_VALUES = false;
+        public static final boolean SUPPORTS_INTEGER_VALUES = false;
+        public static final boolean SUPPORTS_LONG_VALUES = false;
+        public static final boolean SUPPORTS_STRING_VALUES = false;
+
         /**
          * TODO FIXME
          */
         @Override
         public boolean supportsVariables() {
-            return false;
+            return SUPPORTS_VARIABLES;
         }
         
         @Override
         public boolean supportsBooleanValues() {
-            return false;
+            return SUPPORTS_BOOLEAN_VALUES;
         }
 
         @Override
         public boolean supportsByteValues() {
-            return false;
+            return SUPPORTS_BYTE_VALUES;
         }
 
         @Override
         public boolean supportsDoubleValues() {
-            return false;
+            return SUPPORTS_DOUBLE_VALUES;
         }
 
         @Override
         public boolean supportsFloatValues() {
-            return false;
+            return SUPPORTS_FLOAT_VALUES;
         }
 
         @Override
         public boolean supportsIntegerValues() {
-            return false;
+            return SUPPORTS_INTEGER_VALUES;
         }
 
         @Override
         public boolean supportsLongValues() {
-            return false;
+            return SUPPORTS_LONG_VALUES;
         }
 
         @Override
         public boolean supportsStringValues() {
-            return false;
+            return SUPPORTS_STRING_VALUES;
         }
 
     }
 
-    public class BlazeVertexFeatures extends BlazeElementFeatures implements VertexFeatures {
+    public static class Vertex extends Element implements VertexFeatures {
 
-        private final VertexPropertyFeatures vertexPropertyFeatures = new BlazeVertexPropertyFeatures();
+        public static final boolean SUPPORTS_META_PROPERTIES = true;
+        public static final boolean SUPPORTS_MULTI_PROPERTIES = true;
+        public static final boolean SUPPORTS_USER_SUPPLIED_IDS = true;
+        public static final boolean SUPPORTS_ADD_VERTICES = true;
+        public static final boolean SUPPORTS_REMOVE_VERTICES = true;
 
-        private BlazeVertexFeatures() {
-        }
-        
+        private final VertexPropertyFeatures vertexPropertyFeatures = new VertexProperty();
+
         @Override
         public VertexPropertyFeatures properties() {
             return vertexPropertyFeatures;
@@ -167,42 +181,48 @@ public class BlazeGraphFeatures implements Features {
 
         @Override
         public boolean supportsMetaProperties() {
-            return true;
+            return SUPPORTS_META_PROPERTIES;
         }
 
         @Override
         public boolean supportsMultiProperties() {
-            return true;
+            return SUPPORTS_MULTI_PROPERTIES;
         }
 
         @Override
         public boolean supportsUserSuppliedIds() {
-            return true;
+            return SUPPORTS_USER_SUPPLIED_IDS;
         }
 
+        /**
+         * Really you would need to perform a Sparql query to ascertain this,
+         * unless you have a fixed application schema.  Returns Cardinality.set
+         * by default since that is the closest match to RDF.
+         */
         @Override
-        public VertexProperty.Cardinality getCardinality(final String key) {
+        public Cardinality getCardinality(final String key) {
             return Cardinality.set;
         }
         
         @Override
         public boolean supportsAddVertices() {
-            return true;
+            return SUPPORTS_ADD_VERTICES;
         }
 
         @Override
         public boolean supportsRemoveVertices() {
-            return true;
+            return SUPPORTS_REMOVE_VERTICES;
         }
 
     }
 
-    public class BlazeEdgeFeatures extends BlazeElementFeatures implements EdgeFeatures {
+    public static class Edge extends Element implements EdgeFeatures {
 
-        private final EdgePropertyFeatures edgePropertyFeatures = new BlazeEdgePropertyFeatures();
+        public static final boolean SUPPORTS_ADD_EDGES = true;
+        public static final boolean SUPPORTS_REMOVE_EDGES = true;
+        public static final boolean SUPPORTS_REMOVE_PROPERTY = true;
 
-        private BlazeEdgeFeatures() {
-        }
+        private final EdgePropertyFeatures edgePropertyFeatures = new EdgeProperty();
 
         @Override
         public EdgePropertyFeatures properties() {
@@ -211,123 +231,131 @@ public class BlazeGraphFeatures implements Features {
 
         @Override
         public boolean supportsAddEdges() {
-            return true;
+            return SUPPORTS_ADD_EDGES;
         }
 
         @Override
         public boolean supportsRemoveEdges() {
-            return true;
+            return SUPPORTS_REMOVE_EDGES;
         }
 
         @Override
         public boolean supportsRemoveProperty() {
-            return true;
+            return SUPPORTS_REMOVE_PROPERTY;
         }
 
     }
 
-    public class BlazeElementFeatures implements ElementFeatures {
+    public static class Element implements ElementFeatures {
 
-        private BlazeElementFeatures() {
-        }
-
+        public static final boolean SUPPORTS_USER_SUPPLIED_IDS = true;
+        public static final boolean SUPPORTS_STRING_IDS = true;
+        public static final boolean SUPPORTS_ADD_PROPERTY = true;
+        public static final boolean SUPPORTS_REMOVE_PROPERTY = true;
+        public static final boolean SUPPORTS_UUID_IDS = false;
+        public static final boolean SUPPORTS_ANY_IDS = false;
+        public static final boolean SUPPORTS_CUSTOM_IDS = false;
+        public static final boolean SUPPORTS_NUMERIC_IDS = false;
+        
         @Override
         public boolean supportsUserSuppliedIds() {
-            return true;
+            return SUPPORTS_USER_SUPPLIED_IDS;
         }
 
         @Override
         public boolean supportsStringIds() {
-            return true;
+            return SUPPORTS_STRING_IDS;
         }
 
-        @Override
-        public boolean supportsUuidIds() {
-            return false;
-        }
-
-        @Override
-        public boolean supportsAnyIds() {
-            return false;
-        }
-
-        @Override
-        public boolean supportsCustomIds() {
-            return false;
-        }
-        
         @Override
         public boolean supportsAddProperty() {
-            return true;
+            return SUPPORTS_ADD_PROPERTY;
         }
 
         @Override
         public boolean supportsRemoveProperty() {
-            return true;
+            return SUPPORTS_REMOVE_PROPERTY;
         }
 
         @Override
+        public boolean supportsUuidIds() {
+            return SUPPORTS_UUID_IDS;
+        }
+
+        @Override
+        public boolean supportsAnyIds() {
+            return SUPPORTS_ANY_IDS;
+        }
+
+        @Override
+        public boolean supportsCustomIds() {
+            return SUPPORTS_CUSTOM_IDS;
+        }
+        
+        @Override
         public boolean supportsNumericIds() {
-            return false;
+            return SUPPORTS_NUMERIC_IDS;
         }
 
     }
 
-    public class BlazeVertexPropertyFeatures extends BlazeDatatypeFeatures 
+    public static class VertexProperty extends Datatype 
             implements VertexPropertyFeatures {
 
-        private BlazeVertexPropertyFeatures() {
-        }
+        public static final boolean SUPPORTS_USER_SUPPLIED_IDS = false;
+        public static final boolean SUPPORTS_STRING_IDS = true;
+        public static final boolean SUPPORTS_ADD_PROPERTY = true;
+        public static final boolean SUPPORTS_REMOVE_PROPERTY = true;
+        public static final boolean SUPPORTS_UUID_IDS = false;
+        public static final boolean SUPPORTS_ANY_IDS = false;
+        public static final boolean SUPPORTS_CUSTOM_IDS = false;
+        public static final boolean SUPPORTS_NUMERIC_IDS = false;
         
         @Override
-        public boolean supportsAddProperty() {
-            return true;
-        }
-
-        @Override
-        public boolean supportsRemoveProperty() {
-            return true;
-        }
-
-        @Override
-        @FeatureDescriptor(name = Graph.Features.VertexPropertyFeatures.FEATURE_USER_SUPPLIED_IDS)
         public boolean supportsUserSuppliedIds() {
-            return false;
-        }
-        
-        @Override
-        public boolean supportsAnyIds() {
-            return false;
-        }
-
-        @Override
-        public boolean supportsCustomIds() {
-            return false;
-        }
-
-        @Override
-        public boolean supportsNumericIds() {
-            return false;
+            return SUPPORTS_USER_SUPPLIED_IDS;
         }
 
         @Override
         public boolean supportsStringIds() {
-            return true;
+            return SUPPORTS_STRING_IDS;
+        }
+
+        @Override
+        public boolean supportsAddProperty() {
+            return SUPPORTS_ADD_PROPERTY;
+        }
+
+        @Override
+        public boolean supportsRemoveProperty() {
+            return SUPPORTS_REMOVE_PROPERTY;
         }
 
         @Override
         public boolean supportsUuidIds() {
-            return false;
+            return SUPPORTS_UUID_IDS;
+        }
+
+        @Override
+        public boolean supportsAnyIds() {
+            return SUPPORTS_ANY_IDS;
+        }
+
+        @Override
+        public boolean supportsCustomIds() {
+            return SUPPORTS_CUSTOM_IDS;
+        }
+        
+        @Override
+        public boolean supportsNumericIds() {
+            return SUPPORTS_NUMERIC_IDS;
         }
 
     }
 
-    public class BlazeEdgePropertyFeatures extends BlazeDatatypeFeatures 
+    public static class EdgeProperty extends Datatype 
             implements EdgePropertyFeatures {
 
-        private BlazeEdgePropertyFeatures() {
-        }
-        
     }
     
     /**
@@ -335,120 +363,129 @@ public class BlazeGraphFeatures implements Features {
      * 
      * @author mikepersonick
      */
-    public class BlazeDatatypeFeatures implements DataTypeFeatures {
+    public static class Datatype implements DataTypeFeatures {
 
-        private BlazeDatatypeFeatures() {
-        }
-        
+        public static final boolean SUPPORTS_BOOLEAN_VALUES = true;
+        public static final boolean SUPPORTS_BYTE_VALUES = true;
+        public static final boolean SUPPORTS_DOUBLE_VALUES = true;
+        public static final boolean SUPPORTS_FLOAT_VALUES = true;
+        public static final boolean SUPPORTS_INTEGER_VALUES = true;
+        public static final boolean SUPPORTS_LONG_VALUES = true;
+        public static final boolean SUPPORTS_STRING_VALUES = true;
+        public static final boolean SUPPORTS_SERIALIZABLE_VALUES = false;
+        public static final boolean SUPPORTS_ARRAY_VALUES = false;
+        public static final boolean SUPPORTS_LIST_VALUES = false;
+        public static final boolean SUPPORTS_MAP_VALUES = false;
+
         /**
          * Supports setting of a boolean value.
          */
-        @FeatureDescriptor(name = FEATURE_BOOLEAN_VALUES)
+        @Override
         public boolean supportsBooleanValues() {
-            return true;
+            return SUPPORTS_BOOLEAN_VALUES;
         }
 
         /**
          * Supports setting of a byte value.
          */
-        @FeatureDescriptor(name = FEATURE_BYTE_VALUES)
+        @Override
         public boolean supportsByteValues() {
-            return true;
+            return SUPPORTS_BYTE_VALUES;
         }
 
         /**
          * Supports setting of a double value.
          */
-        @FeatureDescriptor(name = FEATURE_DOUBLE_VALUES)
+        @Override
         public boolean supportsDoubleValues() {
-            return true;
+            return SUPPORTS_DOUBLE_VALUES;
         }
 
         /**
          * Supports setting of a float value.
          */
-        @FeatureDescriptor(name = FEATURE_FLOAT_VALUES)
+        @Override
         public boolean supportsFloatValues() {
-            return true;
+            return SUPPORTS_FLOAT_VALUES;
         }
 
         /**
          * Supports setting of a integer value.
          */
-        @FeatureDescriptor(name = FEATURE_INTEGER_VALUES)
+        @Override
         public boolean supportsIntegerValues() {
-            return true;
+            return SUPPORTS_INTEGER_VALUES;
         }
 
         /**
          * Supports setting of a long value.
          */
-        @FeatureDescriptor(name = FEATURE_LONG_VALUES)
+        @Override
         public boolean supportsLongValues() {
-            return true;
+            return SUPPORTS_LONG_VALUES;
         }
 
         /**
          * Supports setting of a string value.
          */
-        @FeatureDescriptor(name = FEATURE_STRING_VALUES)
+        @Override
         public boolean supportsStringValues() {
-            return true;
-        }
-
-        @Override
-        public boolean supportsBooleanArrayValues() {
-            return false;
-        }
-
-        @Override
-        public boolean supportsByteArrayValues() {
-            return false;
-        }
-
-        @Override
-        public boolean supportsDoubleArrayValues() {
-            return false;
-        }
-
-        @Override
-        public boolean supportsFloatArrayValues() {
-            return false;
-        }
-
-        @Override
-        public boolean supportsIntegerArrayValues() {
-            return false;
-        }
-
-        @Override
-        public boolean supportsLongArrayValues() {
-            return false;
-        }
-
-        @Override
-        public boolean supportsMapValues() {
-            return false;
-        }
-
-        @Override
-        public boolean supportsMixedListValues() {
-            return false;
+            return SUPPORTS_STRING_VALUES;
         }
 
         @Override
         public boolean supportsSerializableValues() {
-            return false;
+            return SUPPORTS_SERIALIZABLE_VALUES;
+        }
+
+        @Override
+        public boolean supportsBooleanArrayValues() {
+            return SUPPORTS_ARRAY_VALUES;
+        }
+
+        @Override
+        public boolean supportsByteArrayValues() {
+            return SUPPORTS_ARRAY_VALUES;
+        }
+
+        @Override
+        public boolean supportsDoubleArrayValues() {
+            return SUPPORTS_ARRAY_VALUES;
+        }
+
+        @Override
+        public boolean supportsFloatArrayValues() {
+            return SUPPORTS_ARRAY_VALUES;
+        }
+
+        @Override
+        public boolean supportsIntegerArrayValues() {
+            return SUPPORTS_ARRAY_VALUES;
+        }
+
+        @Override
+        public boolean supportsLongArrayValues() {
+            return SUPPORTS_ARRAY_VALUES;
         }
 
         @Override
         public boolean supportsStringArrayValues() {
-            return false;
+            return SUPPORTS_ARRAY_VALUES;
+        }
+
+        @Override
+        public boolean supportsMapValues() {
+            return SUPPORTS_MAP_VALUES;
+        }
+
+        @Override
+        public boolean supportsMixedListValues() {
+            return SUPPORTS_LIST_VALUES;
         }
 
         @Override
         public boolean supportsUniformListValues() {
-            return false;
+            return SUPPORTS_LIST_VALUES;
         }
         
     }

@@ -20,40 +20,55 @@ You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
-package com.blazegraph.gremlin.listener;
+package com.blazegraph.gremlin.internal;
 
 import com.bigdata.rdf.changesets.IChangeLog;
 import com.bigdata.rdf.changesets.IChangeRecord;
 
 /**
- * Provide default no-ops for IChangeLog.
+ * Turn IChangeLog (Java 7) into a Java 8 functional interface.
  * 
  * @author mikepersonick
  */
+@FunctionalInterface
 public interface BlazeSailListener extends IChangeLog {
 
     @Override
-    default void changeEvent(IChangeRecord changeRecord) {
-    }
+    void changeEvent(IChangeRecord changeRecord);
 
-    @Override
-    default void close() {
-    }
-
+    /**
+     * Default no-op.
+     */
     @Override
     default void transactionAborted() {
     }
 
+    /**
+     * Default no-op.
+     */
     @Override
     default void transactionBegin() {
     }
 
+    /**
+     * Default no-op.
+     */
     @Override
     default void transactionCommited(long commitTime) {
     }
 
+    /**
+     * Default no-op.
+     */
     @Override
     default void transactionPrepare() {
     }
     
+    /**
+     * Default no-op.
+     */
+    @Override
+    default void close() {
+    }
+
 }

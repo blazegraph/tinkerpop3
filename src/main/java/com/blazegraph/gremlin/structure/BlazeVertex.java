@@ -35,22 +35,55 @@ import org.openrdf.model.Literal;
 import com.bigdata.rdf.model.BigdataURI;
 import com.blazegraph.gremlin.util.CloseableIterator;
 
+/**
+ * Concrete vertex implementation for BlazeGraph.
+ * <p/>
+ * Vertex existence is represented as one triples as follows:
+ * <p/>
+ * <pre>
+ *     :vertexId rdfs:label "label" .
+ * </pre>
+ * <p/>
+ * Vertex properties are represented as follows:
+ * <p/>
+ * <pre>
+ *     :vertexId :key "val" .
+ * </pre>
+ * 
+ * @author mikepersonick
+ */
 public class BlazeVertex extends AbstractBlazeElement implements Vertex, BlazeElement {
 
-    public BlazeVertex(final BlazeGraph graph, final BigdataURI uri, final Literal label) {
+    /**
+     * Construct an instance.
+     */
+    BlazeVertex(final BlazeGraph graph, final BigdataURI uri, 
+            final Literal label) {
         super(graph, uri, label);
     }
     
+    /**
+     * Strengthen return type. Vertex RDF id is its URI.
+     */
     @Override
     public BigdataURI rdfId() {
         return uri;
     }
     
+    /**
+     * Pass through to {@link StringFactory#vertexString(Vertex)}
+     */
     @Override
     public String toString() {
         return StringFactory.vertexString(this);
     }
     
+    /**
+     * Strengthen return type to {@link BlazeVertexProperty}.
+     * 
+     * @see {@link Vertex#property(String)}
+     * @see {@link BlazeVertex#properties(String...)}
+     */
     @Override
     public <V> BlazeVertexProperty<V> property(final String key) {
         try (CloseableIterator<VertexProperty<V>> it = this.properties(key)) {
@@ -66,11 +99,20 @@ public class BlazeVertex extends AbstractBlazeElement implements Vertex, BlazeEl
         }
     }
     
+    /**
+     * Strengthen return type to {@link BlazeVertexProperty} and use 
+     * Cardinality.single by default.
+     */
     @Override
     public <V> BlazeVertexProperty<V> property(final String key, final V val) {
         return property(Cardinality.single, key, val);
     }
 
+    /**
+     * Strengthen return type to {@link BlazeVertexProperty}.
+     * 
+     * @see {@link BlazeGraph#vertexProperty(BlazeVertex, Cardinality, String, Object, Object...)}
+     */
     @Override
     public <V> BlazeVertexProperty<V> property(final Cardinality cardinality, 
             final String key, final V val, final Object... kvs) {
@@ -78,46 +120,50 @@ public class BlazeVertex extends AbstractBlazeElement implements Vertex, BlazeEl
         if (ElementHelper.getIdValue(kvs).isPresent())
             throw Vertex.Exceptions.userSuppliedIdsNotSupported();
         
-        final BlazeVertexProperty<V> prop = graph.vertexProperty(this, key, val, cardinality);
-        ElementHelper.attachProperties(prop, kvs);
-        return prop;
+        return graph.vertexProperty(this, cardinality, key, val, kvs);
     }
     
-//    private boolean clean(final Cardinality cardinality) {
-//        switch(cardinality) {
-//        case single: return true; 
-//        case set: 
-//        case list: return false;
-//        default: throw new IllegalArgumentException("Cardinality not supported: " + cardinality);
-//        }
-//    }
-
+    /**
+     * Strength return type to {@link CloseableIterator}.  You MUST close this
+     * iterator when finished.
+     */
     @Override
     public <V> CloseableIterator<VertexProperty<V>> properties(String... keys) {
         return graph.properties(this, keys);
     }
-    
+
+    /**
+     * @see {@link Vertex#addEdge(String, Vertex, Object...)}
+     * @see {@link BlazeGraph#addEdge(BlazeVertex, BlazeVertex, String, Object...)}
+     */
     @Override
     public BlazeEdge addEdge(final String label, final Vertex to, final Object... kvs) {
         if (to == null) throw Graph.Exceptions.argumentCanNotBeNull("vertex");
         return graph.addEdge(this, (BlazeVertex) to, label, kvs);
     }
 
-    
+    /**
+     * Strength return type to {@link CloseableIterator}.  You MUST close this
+     * iterator when finished.
+     *
+     * @see {@link Vertex#edges(Direction, String...)}
+     * @see {@link BlazeGraph#edgesFromVertex(BlazeVertex, Direction, String...)}
+     */
     @Override
     public CloseableIterator<Edge> edges(final Direction direction, 
             final String... edgeLabels) {
         return graph.edgesFromVertex(this, direction, edgeLabels);
     }
     
+    /**
+     * Strength return type to {@link CloseableIterator}.  You MUST close this
+     * iterator when finished.
+     * 
+     * @see {@link Vertex#vertices(Direction, String...)}
+     */
     @Override
     public CloseableIterator<Vertex> vertices(final Direction direction, 
             final String... edgeLabels) {
-//        final CloseableIterator<Edge> edges = edges(direction, edgeLabels);
-//        return CloseableIterators.of(edges, e -> {
-//            final BlazeEdge be = (BlazeEdge) e;
-//            return be.outVertex().equals(this) ? be.inVertex() : be.outVertex();
-//        });
         return CloseableIterator.of(edges(direction, edgeLabels)
                     .stream()
                     .map(e -> {
@@ -126,6 +172,10 @@ public class BlazeVertex extends AbstractBlazeElement implements Vertex, BlazeEl
                     }));
     }
     
+    /**
+     * @see {@link Vertex#remove()}
+     * @see {@link BlazeGraph#remove(BlazeVertex)}
+     */
     @Override
     public void remove() {
         graph.remove(this);

@@ -29,8 +29,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
-import org.apache.commons.configuration.BaseConfiguration;
-import org.apache.commons.configuration.Configuration;
 import org.openrdf.model.Literal;
 import org.openrdf.model.Resource;
 import org.openrdf.model.URI;
@@ -49,17 +47,18 @@ public abstract class TestBlazeGraph extends TestCase {
     
     protected BlazeGraphEmbedded graph = null;
     
+    /**
+     * Subclasses can override BasicRepositoryProvider defaults for Blaze
+     * properties.
+     */
     protected Map<String,String> overrides() {
         return Collections.emptyMap();
     }
     
     @Override
     public void setUp() throws Exception {
-        final BigdataSailRepository repo = RepositoryProvider.open(overrides()); 
-        final Configuration config = new BaseConfiguration();
-//        this.mgr = new BlazeGraphManager(repo, config);
-//        this.graph = mgr.unisolatedConnection();
-        this.graph = BlazeGraphEmbedded.open(repo, config);
+        final BigdataSailRepository repo = TestRepositoryProvider.open(overrides()); 
+        this.graph = BlazeGraphEmbedded.open(repo);
     }
     
     @Override

@@ -31,7 +31,27 @@
         </configuration>
       </plugin>
     </plugins>
+    <extensions>
+      <extension>
+        <groupId>org.apache.maven.wagon</groupId>
+         <artifactId>wagon-ssh-external</artifactId>
+         <version>1.0-beta-6</version>
+      </extension>
+    </extensions>
   </build>
+  <distributionManagement>
+        <repository>
+            <id>bigdata.releases</id>
+            <name>bigdata(R) releases</name>
+            <url>scpexe://www.systap.com/srv/www/htdocs/systap.com/maven/releases</url>
+        </repository>
+        <snapshotRepository>
+            <id>bigdata.snapshots</id>
+            <name>bigdata(R) snapshots</name>
+            <url>scpexe://www.systap.com/srv/www/htdocs/systap.com/maven/snapshots</url>
+            <uniqueVersion>true</uniqueVersion>
+        </snapshotRepository>
+  </distributionManagement>
   <repositories>
     <repository>
       <id>bigdata.releases</id>

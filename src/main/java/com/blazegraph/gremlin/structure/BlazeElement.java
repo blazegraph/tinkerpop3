@@ -33,33 +33,51 @@ import org.openrdf.model.Literal;
 import com.bigdata.rdf.model.BigdataResource;
 import com.blazegraph.gremlin.util.CloseableIterator;
 
+/**
+ * Extends the Tinkerpop3 interface to strengthen return types from Iterator
+ * to {@link CloseableIterator} and to expose RDF values for id and label.
+ * 
+ * @author mikepersonick
+ */
 public interface BlazeElement extends Element {
 
+    /**
+     * Strengthen return type to {@link BlazeGraph}.
+     */
     @Override
     BlazeGraph graph();
     
+    /**
+     * Return RDF value for element id (URI for Vertex, BNode for Edge and
+     * VertexProperty).
+     */
     BigdataResource rdfId();
-    
+
+    /**
+     * Return RDF literal for element label.
+     */
     Literal rdfLabel();
     
-//    @Override
-//    String id();
-    
     /**
-     * Strengthen return type to {@link CloseableIterator}.
+     * Strengthen return type to {@link CloseableIterator}. You MUST close this
+     * iterator when finished.
      */
     @Override
     <V> CloseableIterator<? extends Property<V>> properties(String... keys);
 
     /**
-     * Strengthen return type to {@link CloseableIterator}.
+     * Strengthen return type to {@link CloseableIterator}. You MUST close this
+     * iterator when finished.
      */
     @Override
     public default <V> CloseableIterator<V> values(final String... keys) {
-//        return CloseableIterators.of(this.<V>properties(keys), Property::value);
         return CloseableIterator.of(this.<V>properties(keys).stream().map(Property::value));
     }
 
+    /**
+     * Provide safer default implementation (closes properties() iterator used
+     * to calculate keys).
+     */
     @Override
     public default Set<String> keys() {
         try (CloseableIterator<? extends Property<?>> it = this.properties()) {
