@@ -101,6 +101,10 @@ Copyright 2010 by TalkingTrends (Amsterdam, The Netherlands)
       <id>bigdata.snapshots</id>
       <url>http://www.systap.com/maven/snapshots/</url>
     </repository>
+    <repository>
+      <id>apache.snapshots</id>
+      <url>http://repository.apache.org/snapshots/</url>
+    </repository>
     <!--
     <repository>
       <id>jetty.releases</id>
