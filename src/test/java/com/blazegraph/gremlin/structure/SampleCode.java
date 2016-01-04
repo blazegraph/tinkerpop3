@@ -1,7 +1,12 @@
 package com.blazegraph.gremlin.structure;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
+import java.io.File;
+import java.util.LinkedList;
+import java.util.List;
+
+import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty.Cardinality;
@@ -12,7 +17,11 @@ import org.junit.Before;
 import org.junit.Test;
 
 import com.bigdata.rdf.sail.BigdataSailRepository;
+import com.blazegraph.gremlin.embedded.BasicRepositoryProvider;
 import com.blazegraph.gremlin.embedded.BlazeGraphEmbedded;
+import com.blazegraph.gremlin.listener.BlazeGraphAtom;
+import com.blazegraph.gremlin.listener.BlazeGraphEdit;
+import com.blazegraph.gremlin.listener.BlazeGraphListener;
 import com.blazegraph.gremlin.structure.BlazeGraph.Match;
 import com.blazegraph.gremlin.util.CloseableIterator;
 import com.blazegraph.gremlin.util.LambdaLogger;
@@ -29,10 +38,41 @@ public class SampleCode {
     
     protected BlazeGraphEmbedded graph = null;
     
+    /**
+     * Open a BlazeGraph instance backed by the supplied journal file.
+     */
+    public static BlazeGraphEmbedded open(final File file) {
+        /*
+         * A journal file is the persistence mechanism for an embedded 
+         * Blazegraph instance.
+         */
+        final String journal = file.getAbsolutePath();
+        
+        /*
+         * BasicRepositoryProvider will create a Blazegraph repository using the
+         * specified journal file with a reasonable default configuration set
+         * for the Tinkerpop3 API. This will also open a previously created
+         * repository if the specified journal already exists.
+         * 
+         * ("Bigdata" is the legacy product name for Blazegraph).
+         * 
+         * See BasicRepositoryProvider for more details on the default SAIL 
+         * configuration.
+         */
+        final BigdataSailRepository repo = BasicRepositoryProvider.open(journal);
+        
+        /*
+         * Open a BlazeGraphEmbedded instance with no additional configuration.
+         * See BlazeGraphEmbedded.Options for additional configuration options.
+         */
+        final BlazeGraphEmbedded graph = BlazeGraphEmbedded.open(repo);
+        return graph;
+    }
+    
     @Before
     public void setUp() throws Exception {
         /*
-         * TestRepositoryProvider extends BasicRepositoryProvider and creates a 
+         * TestRepositoryProvider extends BasicRepositoryProvider to create a 
          * temp journal file for the lifespan of the individual test method.  
          * You'll want to create your own BasicRepositoryProvider for your
          * application (or just use BasicRepositoryProvider out of the box).
@@ -86,6 +126,8 @@ public class SampleCode {
         graph.bulkLoad(theCrew);
         graph.tx().commit();
         
+        assertEquals(6, graph.vertexCount());
+        
         /*
          * Execute a code block in bulk load mode.
          */
@@ -95,6 +137,8 @@ public class SampleCode {
         });
         graph.tx().commit();
         
+        assertEquals(8, graph.vertexCount());
+        
         /*
          * Manually set and reset bulk load mode. 
          */
@@ -103,11 +147,9 @@ public class SampleCode {
         graph.addVertex(T.id, "d");
         graph.setBulkLoad(false);
         graph.tx().commit();
-        
-        try (CloseableIterator<Vertex> it = graph.vertices()) {
-            log.info(it.stream());
-        }
-        
+
+        assertEquals(10, graph.vertexCount());
+
         /*
          * Be careful not to introduce consistency errors while in bulk load
          * mode. 
@@ -130,6 +172,12 @@ public class SampleCode {
             assertEquals(2, graph.vertices("e").count());
         });
         graph.tx().rollback();
+        
+        assertEquals(10, graph.vertexCount());
+
+        try (CloseableIterator<Vertex> it = graph.vertices()) {
+            log.info(() -> it.stream());
+        }
         
     }
     
@@ -173,7 +221,7 @@ public class SampleCode {
         // three contain "foo"
         assertEquals(3, graph.search("foo", Match.ANY).count());
         // and three contain "bar"
-        assertEquals(3, graph.search("foo", Match.ANY).count());
+        assertEquals(3, graph.search("bar", Match.ANY).count());
         // only two contain both
         assertEquals(2, graph.search("foo bar", Match.ALL).count());
         // and only one contains exactly "foo bar"
@@ -186,17 +234,179 @@ public class SampleCode {
     
     /**
      * Demonstration of the listener API.
+     * <p/>
+     * This API lets you attach listeners to the graph to track graph elements
+     * and properties as they are added or removed and to receive notifications
+     * of commits and rollbacks. The listener API leverages an internal
+     * Blazegraph API that notifies listeners of change events in the RDF
+     * statement indices. RDF breaks down nicely into atomic graph units -
+     * statements - and the Blazegraph change API notifies listeners of add or
+     * remove events for individual statements. Blazegraph provides a
+     * corresponding atomic graph unit for property graphs called the
+     * BlazeGraphAtom. There are four types of atoms - VertexAtom, EdgeAtom,
+     * PropertyAtom, and VertexPropertyAtom. Each atom references the element id
+     * to which it belongs - VertexPropertyAtom references both the vertex id
+     * and the internal vertex property id. VertexAtom and EdgeAtom contain the
+     * element label, PropertyAtom and VertexPropertyAtom contain a key/value
+     * pair. These atoms represent the smallest unit of information about the
+     * property graph and actually correspond one-to-one with RDF statements in
+     * the Blazegraph/TP3 data model. BlazeGraphAtoms are wrapped inside
+     * BlazeGraphEdits, which describe the action taken on the atom (add or
+     * remove).
      */
     @Test
     public void demonstrateListenerAPI() throws Exception {
         
+        /*
+         * Set up a simple listener to collect edits and log events.
+         */
+        final List<BlazeGraphEdit> edits = new LinkedList<>();
+        final BlazeGraphListener listener = new BlazeGraphListener() {
+
+            @Override
+            public void transactionCommited(long commitTime) {
+                log.info(() -> "transactionCommitted: "+commitTime);
+            }
+
+            @Override
+            public void transactionAborted() {
+                log.info(() -> "transactionAborted");
+            }
+
+            @Override
+            public void graphEdited(final BlazeGraphEdit edit, final String rdfEdit) {
+                log.info(() -> "graphEdited: " + edit);
+                edits.add(edit);
+            }
+            
+        };
+        graph.addListener(listener);
+
+        /*
+         * Add a couple vertices.
+         */
+        final BlazeVertex a = graph.addVertex(T.id, "a");
+        final BlazeVertex b = graph.addVertex(T.id, "b");
+        graph.commit();
+
+        assertEquals(2, edits.size());
+        edits.stream().forEach(edit -> {
+            assertEquals(BlazeGraphEdit.Action.Add, edit.getAction());
+            assertEquals(BlazeGraphAtom.VertexAtom.class, edit.getAtom().getClass());
+        });
+        edits.clear();
+        
+        /*
+         * Add vertex properties.
+         */
+        a.property("key", "val");
+        b.property("key", "val");
+        graph.tx().commit();
+        
+        assertEquals(2, edits.size());
+        edits.stream().forEach(edit -> {
+            assertEquals(BlazeGraphEdit.Action.Add, edit.getAction());
+            final BlazeGraphAtom.VertexPropertyAtom atom = 
+                    (BlazeGraphAtom.VertexPropertyAtom) edit.getAtom();
+            assertEquals("key", atom.getKey());
+            assertEquals("val", atom.getVal());
+        });
+        edits.clear();
+        
+        /*
+         * Add an edge.
+         */
+        final BlazeEdge edge = a.addEdge(Edge.DEFAULT_LABEL, b);
+        graph.commit();
+
+        assertEquals(1, edits.size());
+        edits.stream().forEach(edit -> {
+            assertEquals(BlazeGraphEdit.Action.Add, edit.getAction());
+            assertEquals(BlazeGraphAtom.EdgeAtom.class, edit.getAtom().getClass());
+        });
+        edits.clear();
+        
+        /*
+         * Add an edge property.
+         */
+        edge.property("key", "val");
+        graph.commit();
+
+        assertEquals(1, edits.size());
+        edits.stream().forEach(edit -> {
+            assertEquals(BlazeGraphEdit.Action.Add, edit.getAction());
+            assertEquals(BlazeGraphAtom.PropertyAtom.class, edit.getAtom().getClass());
+        });
+        edits.clear();
+
+        /*
+         * Remove the edge will result in two edits - the edge and its property.
+         */
+        edge.remove();
+        graph.commit();
+
+        assertEquals(2, edits.size());
+        edits.stream().forEach(edit -> {
+            assertEquals(BlazeGraphEdit.Action.Remove, edit.getAction());
+        });
+        edits.clear();
+
     }
     
     /**
      * Demonstration of the history API.
+     * <p/>
+     * The history API is closely related to the listener API in that the unit
+     * of information is the same - BlazeGraphEdits. With the history API, you
+     * can look back in time on the history of the graph - when vertices and
+     * edges were added or removed or what the property history looks like for
+     * individual elements. With the history API you specify the element ids of
+     * interest and get back an iterator of edits for those ids. The history
+     * information is also modeled using RDF*, meaning the history is part of
+     * the raw RDF graph itself. Thus the history information can also be
+     * accessed via Sparql.
      */
     @Test
     public void demonstrateHistoryAPI() throws Exception {
+        
+        /*
+         * Add a vertex.
+         */
+        final BlazeVertex a = graph.addVertex(T.id, "a");
+        graph.tx().commit();
+        
+        /*
+         * Add a property.
+         */
+        a.property(Cardinality.single, "key", "foo");
+        graph.tx().commit();
+        
+        /*
+         * Change the value.
+         */
+        a.property(Cardinality.single, "key", "bar");
+        graph.tx().commit();
+        
+        /*
+         * Remove the vertex.
+         */
+        a.remove();
+        graph.tx().commit();
+
+        /*
+         * Get the history, which should be the following:
+         * 
+         * 1. VertexAtom("a"), action=add, time=t0
+         * 2. VertexPropertyAtom("key"="foo"), action=add, time=t1
+         * 3. VertexPropertyAtom("key"="foo"), action=remove, time=t2
+         * 4. VertexPropertyAtom("key"="bar"), action=add, time=t2
+         * 5. VertexPropertyAtom("key"="bar"), action=remove, time=t3
+         * 6. VertexAtom("a"), action=add, time=t3
+         */
+        List<BlazeGraphEdit> history = graph.history("a").collect();
+        assertEquals(6, history.size());
+        
+        log.info(() -> history.stream());
         
     }
     

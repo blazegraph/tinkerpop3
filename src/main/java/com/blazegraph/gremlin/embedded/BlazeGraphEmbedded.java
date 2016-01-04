@@ -76,6 +76,7 @@ import com.bigdata.rdf.store.BigdataStatementIterator;
 import com.bigdata.relation.accesspath.AbstractArrayBuffer;
 import com.bigdata.striterator.ChunkedArrayIterator;
 import com.bigdata.util.MillisecondTimestampFactory;
+import com.blazegraph.gremlin.internal.BlazeSailListener;
 import com.blazegraph.gremlin.listener.BlazeGraphEdit;
 import com.blazegraph.gremlin.listener.BlazeGraphEdit.Action;
 import com.blazegraph.gremlin.listener.BlazeGraphListener;
@@ -452,7 +453,7 @@ public class BlazeGraphEmbedded extends BlazeGraph {
      * ({@link BlazeGraphEdit}s), forward notifications to 
      * {@link BlazeGraphListener}s.
      */
-    private class ChangeLogTransformer implements IChangeLog {
+    private class ChangeLogTransformer implements BlazeSailListener {
         
         /**
          * We need to buffer and materialize these, since remove events come in
@@ -592,22 +593,6 @@ public class BlazeGraphEmbedded extends BlazeGraph {
                          }
                      });
             
-        }
-    
-        /**
-         * Notification of transaction beginning.
-         */
-        @Override
-        public void transactionBegin() {
-            listeners.forEach(BlazeGraphListener::transactionBegin);
-        }
-    
-        /**
-         * Notification of transaction preparing for commit.
-         */
-        @Override
-        public void transactionPrepare() {
-            listeners.forEach(BlazeGraphListener::transactionPrepare);
         }
     
         /**

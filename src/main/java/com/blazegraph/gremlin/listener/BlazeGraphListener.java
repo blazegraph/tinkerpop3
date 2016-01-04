@@ -45,20 +45,6 @@ public interface BlazeGraphListener {
     void graphEdited(BlazeGraphEdit edit, String rdfEdit);
 
     /**
-     * Notification of the beginning of a transaction.
-     */
-    default void transactionBegin() {
-        // noop default impl
-    }
-
-    /**
-     * Notification of a transaction about to commit.
-     */
-    default void transactionPrepare() {
-        // noop default impl
-    }
-
-    /**
      * Notification of a transaction committed.
      * 
      * @param commitTime
