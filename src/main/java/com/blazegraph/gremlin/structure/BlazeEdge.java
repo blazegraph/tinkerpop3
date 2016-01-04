@@ -35,6 +35,7 @@ import org.openrdf.model.Literal;
 import com.bigdata.rdf.model.BigdataBNode;
 import com.bigdata.rdf.model.BigdataStatement;
 import com.bigdata.rdf.model.BigdataValueFactory;
+import com.blazegraph.gremlin.structure.BlazeGraphFeatures.Graph;
 import com.blazegraph.gremlin.util.CloseableIterator;
 
 /**
@@ -76,6 +77,18 @@ public class BlazeEdge extends AbstractBlazeElement implements Edge, BlazeReifie
         final BigdataValueFactory rdfvf = graph.rdfValueFactory();
         this.sid = rdfvf.createBNode(stmt);
         this.vertices = new Vertices(from, to);
+    }
+    
+    /**
+     * Construct an instance without vertices.  Used by 
+     * {@link BlazeGraph#bulkLoad(Graph)}
+     */
+    BlazeEdge(final BlazeGraph graph, final BigdataStatement stmt, 
+            final Literal label) {
+        super(graph, stmt.getPredicate(), label);
+        final BigdataValueFactory rdfvf = graph.rdfValueFactory();
+        this.sid = rdfvf.createBNode(stmt);
+        this.vertices = null;
     }
     
     @Override

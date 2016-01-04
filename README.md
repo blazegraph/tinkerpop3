@@ -183,7 +183,99 @@ Here is how the Tinkerpop3 "Crew" dataset looks when loaded into Blazegraph.  Hu
     <<blaze:matthias blaze:location "oakland">>      blaze:startTime "2011"^^xsd:int ;
                                                      blaze:endTime "2014"^^xsd:int .
     <<blaze:matthias blaze:location "seattle">>      blaze:startTime "2014"^^xsd:int .	
-## Transactions and Concurrency in BlazeGraphEmbedded
+## Beyond the TP3 Graph API
+
+Blazegraph/TP3 has a number of features that go beyond the standard Tinkerpop3 Graph API.
+
+### Bulk Load API
+
+The bulk load API provides a means of fast unchecked loading of data into Blazegraph.  By default, Blazegraph/TP3 is in "incremental update" mode.  Incremental update does strict checking on vertex and edge id re-use and enforcement of property key cardinality.  Both of these validations require a read against the database indices.  Blazegraph benefits greatly from buffering and batch inserting statements into the database indices.  Buffering and batch insert are defeated by interleaving reads and removes into the loading process, which is what happens with the normal validation steps in incremental update mode.  The bulk load API is a means of bypassing the strict validation that normally occurs in incremental update mode.  The bulk load API is suitable for use in loading "known-good" datasets - datasets that have already been validated for consistency errors.
+
+The bulk load API can be used in several ways:
+
+    /*
+     * Bulk load another graph.
+     */
+    final TinkerGraph theCrew = TinkerFactory.createTheCrew();
+    graph.bulkLoad(theCrew);
+    graph.tx().commit();
+    
+    /*
+     * Execute a code block in bulk load mode.
+     */
+    graph.bulkLoad(() -> {
+        graph.addVertex(T.id, "a");
+        graph.addVertex(T.id, "b");
+    });
+    graph.tx().commit();
+    
+    /*
+     * Manually set and reset bulk load mode. 
+     */
+    graph.setBulkLoad(true);
+    graph.addVertex(T.id, "c");
+    graph.addVertex(T.id, "d");
+    graph.setBulkLoad(false);
+    graph.tx().commit();
+    
+Be careful not to introduce consistency errors while in bulk load mode. 
+     
+    graph.bulkLoad(() -> {
+        final BlazeVertex e = graph.addVertex(T.id, "e", T.label, "foo");
+        e.property(Cardinality.single, "someKey", "v1");
+        e.property(Cardinality.single, "someKey", "v2");
+        /*
+         * Consistency error - cardinality enforcement has been bypassed,
+         * resulting in two values for Cardinality.single.
+         */
+        assertEquals(2, e.properties("someKey").count());
+        
+        graph.addVertex(T.id, "e", T.label, "bar");
+        /*
+         * Consistency error - we've created a new vertex with the same id
+         * as an existing one.
+         */
+        assertEquals(2, graph.vertices("e").count());
+    });
+    graph.tx().rollback();
+
+
+### Search API
+
+The search API lets you use Blazegraph's built-in full text index to perform Lucene-style searches against your graph.  Searches are done against property values - the search results are an iterator of Property objects (connected to the graph elements to which they belong).  The search API will find both properties (on vertices and edges) and meta-properties (on vertex properties).  To use the API, specify a search string and a match behavior.  The search string can consist of one or more tokens to find.  The match behavior tells the search engine how to look for the tokens - find any of them (or), find all of them (and), or find only exact matches for the search string.  "Exact" is somewhat expensive relative to "All" - it's usually better to use "All" and live with slightly less precision in the search results.  If a "*" appears at the end of a token, the search engine will use prefix matching instead of token matching.  Prefix match is either on or off for the entire search, it is not done on a token by token basis.
+
+    /*
+     * Load a toy graph.
+     */
+    graph.bulkLoad(() -> {
+        final BlazeVertex v = graph.addVertex();
+        v.property(Cardinality.set, "key", "hello foo");
+        v.property(Cardinality.set, "key", "hello bar");
+        v.property(Cardinality.set, "key", "hello foo bar");
+        v.property(Cardinality.set, "key", "hello bar foo");
+    });
+    graph.tx().commit();
+    
+    // all four vertex properties contain "foo" or "bar"
+    assertEquals(4, graph.search("foo bar", Match.ANY).count());
+    // three contain "foo"
+    assertEquals(3, graph.search("foo", Match.ANY).count());
+    // and three contain "bar"
+    assertEquals(3, graph.search("foo", Match.ANY).count());
+    // only two contain both
+    assertEquals(2, graph.search("foo bar", Match.ALL).count());
+    // and only one contains exactly "foo bar"
+    assertEquals(1, graph.search("foo bar", Match.EXACT).count());
+    
+    // prefix match
+    assertEquals(4, graph.search("hell*", Match.ANY).count());
+
+
+### Listener API
+
+### History API
+
+### Transaction and Concurrency API
 
 Currently BlazeGraphEmbedded is the only concrete implementation of the Blazegraph Tinkerpop3 API.  BlazeGraphEmbedded is backed by an embedded (same JVM) instance of Blazegraph.  This puts the enterprise features of Blazegraph (high-availability, scale-out, etc.) out of reach for the 1.0 version of the TP3 integration, since those features are accessed via Blazegraph's client/server API.  A TP3 integration with the client/server version of Blazegraph is reserved for a future blazegraph-tinkerpop release.
 
@@ -203,3 +295,4 @@ BlazeGraphReadOnly extends BlazeGraphEmbedded and thus offers all the same opera
 
 **Important: Make sure to close the read-only view when you are done with it.**
 
+### Sparql API

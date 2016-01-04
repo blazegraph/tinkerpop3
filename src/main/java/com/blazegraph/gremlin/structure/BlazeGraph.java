@@ -45,7 +45,9 @@ import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Graph;
+import org.apache.tinkerpop.gremlin.structure.Graph.Features.VertexFeatures;
 import org.apache.tinkerpop.gremlin.structure.Property;
+import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Transaction;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
@@ -334,7 +336,8 @@ public abstract class BlazeGraph implements Graph {
     }
     
     /**
-     * Execute the supplied code fragment in bulk load mode.
+     * Execute the supplied code fragment in bulk load mode and reset to 
+     * incremental mode when finished.
      * 
      * @see {@link #setBulkLoad(boolean)}
      */
@@ -345,6 +348,49 @@ public abstract class BlazeGraph implements Graph {
             setBulkLoad(true);
             Code.wrapThrow(code, () -> setBulkLoad(false));
         }
+    }
+    
+    /**
+     * Bulk load a Graph (TinkerGraph or otherwise).  Uses the Graph's 
+     * features to determine VertexProperty key cardinality.  Vertex and Edge
+     * ids will be toString()-ed, VertexProperty ids will be ignored.
+     */
+    public void bulkLoad(final Graph g) {
+        final VertexFeatures vf = g.features().vertex();
+        bulkLoad(g, key -> vf.getCardinality(key));
+    }
+    
+    /**
+     * Bulk load a Graph (TinkerGraph or otherwise), using the supplied
+     * function to determine VertexProperty key cardinality.  Vertex and Edge
+     * ids will be toString()-ed, VertexProperty ids will be ignored.
+     */
+    public void bulkLoad(final Graph g, 
+            final Function<String,Cardinality> getCardinality) {
+        bulkLoad(() -> {
+            g.vertices().forEachRemaining(v -> {
+                final String id = v.id().toString();
+                final BlazeVertex bv = this.addVertex(T.id, id, T.label, v.label());
+                v.properties().forEachRemaining(vp -> {
+                    final String key = vp.key();
+                    final Object val = vp.value();
+                    final BlazeVertexProperty<Object> bvp = 
+                            bv.property(getCardinality.apply(key), key, val);
+                    bv.properties().forEachRemaining(p -> {
+                        bvp.property(p.key(), p.value());
+                    });
+                });
+            });
+            g.edges().forEachRemaining(e -> {
+                final String id = e.id().toString();
+                final String fromId = e.outVertex().id().toString();
+                final String toId = e.inVertex().id().toString();
+                final BlazeEdge be = this.addEdge(id, e.label(), fromId, toId);
+                e.properties().forEachRemaining(p -> {
+                    be.property(p.key(), p.value());
+                });
+            });
+        });
     }
 
     /**
@@ -428,6 +474,42 @@ public abstract class BlazeGraph implements Graph {
         
         final BlazeEdge edge = new BlazeEdge(this, edgeStmt, rdfLabel, from, to);
         ElementHelper.attachProperties(edge, kvs);
+        return edge;
+    }
+    
+    /**
+     * Private helper used exclusively by {@link #bulkLoad(Graph)}.
+     */
+    private BlazeEdge addEdge(final String id, final String label, 
+            final String fromId, final String toId) {
+        ElementHelper.validateLabel(label);
+
+        if (!bulkLoad) {
+            final Optional<BlazeEdge> existing = edge(id);
+            if (existing.isPresent()) {
+                throw Graph.Exceptions.vertexWithIdAlreadyExists(id);
+            }
+        }
+
+        final BigdataValueFactory rdfvf = rdfValueFactory();
+        
+        final URI uri = rdfvf.asValue(vf.elementURI(id));
+        final Literal rdfLabel = rdfvf.asValue(vf.toLiteral(label));
+        final URI fromURI = rdfvf.asValue(vf.elementURI(fromId));
+        final URI toURI = rdfvf.asValue(vf.elementURI(toId));
+        
+        final BigdataStatement edgeStmt = 
+                rdfvf.createStatement(fromURI, uri, toURI);
+        
+        final RepositoryConnection cxn = cxn();
+        Code.wrapThrow(() -> {
+            // blaze:person:1 blaze:knows:7 blaze:person:2 .
+            cxn.add(edgeStmt);
+            // <<blaze:person:1 blaze:knows:7 blaze:person:2>> rdfs:label "knows" .
+            cxn.add(rdfvf.createBNode(edgeStmt), LABEL, rdfLabel);
+        });
+        
+        final BlazeEdge edge = new BlazeEdge(this, edgeStmt, rdfLabel);
         return edge;
     }
     
