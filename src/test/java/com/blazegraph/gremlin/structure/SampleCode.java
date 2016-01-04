@@ -1,10 +1,12 @@
 package com.blazegraph.gremlin.structure;
 
+import static java.util.stream.Collectors.toSet;
 import static org.junit.Assert.assertEquals;
 
 import java.io.File;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
@@ -19,6 +21,7 @@ import org.junit.Test;
 import com.bigdata.rdf.sail.BigdataSailRepository;
 import com.blazegraph.gremlin.embedded.BasicRepositoryProvider;
 import com.blazegraph.gremlin.embedded.BlazeGraphEmbedded;
+import com.blazegraph.gremlin.embedded.BlazeGraphReadOnly;
 import com.blazegraph.gremlin.listener.BlazeGraphAtom;
 import com.blazegraph.gremlin.listener.BlazeGraphEdit;
 import com.blazegraph.gremlin.listener.BlazeGraphListener;
@@ -412,17 +415,133 @@ public class SampleCode {
     
     /**
      * Demonstration of the concurrency API.
+     * <p/>
+     * Blazegraph's concurrency model is MVCC, which more or less lines up with
+     * Tinkerpop's Transaction model. When you open a BlazeGraphEmbedded
+     * instance, you are working with the unisolated (writer) view of the
+     * database. This view supports Tinkerpop Transactions, and reads are done
+     * against the unisolated connection, so uncommitted changes will be
+     * visible. A BlazeGraphEmbedded can be shared across multiple threads, but
+     * only one thread can have a Tinkerpop Transaction open at a time (other
+     * threads will be blocked until the transaction is closed). A TP3
+     * Transaction is automatically opened on any read or write operation, and
+     * automatically closed on any commit or rollback operation. The Transaction
+     * can also be closed manually, which you will need to do after read
+     * operations to unblock other waiting threads.
+     * <p/>
+     * BlazegraphGraphEmbedded's database operations are thus single-threaded,
+     * but Blazegraph/MVCC allows for many concurrent readers in parallel with
+     * both the single writer and other readers. This is possible by opening a
+     * read-only view that will read against the last commit point on the
+     * database. The read-only view can be be accessed in parallel to the writer
+     * without any of the restrictions described above.
+     * <p/>
+     * BlazeGraphReadOnly extends BlazeGraphEmbedded and thus offers all the
+     * same operations, except write operations will not be permitted
+     * (BlazeGraphReadOnly.tx() will throw an exception). You can open as many
+     * read-only views as you like, but we recommend you use a connection pool
+     * so as not to overtax system resources. Applications should be written
+     * with the one-writer many-readers paradigm front of mind.
      */
     @Test 
     public void demonstrateConcurrencyAPI() throws Exception {
+
+        /*
+         * Add and commit a vertex.
+         */
+        final BlazeVertex a = graph.addVertex(T.id, "a");
+        graph.commit();
+
+        /*
+         * Open a read-only view on the last commit point.
+         */
+        final BlazeGraphReadOnly readView = graph.readOnlyConnection();
+        try {
+            
+            /*
+             * Open the unisolated connection to the database.
+             */
+            graph.tx().open();
+            
+            /*
+             * Reads against the read-only view are still possible despite the
+             * write connection being open, even if this operation were to occur
+             * in a different thread. This operation would not be possible
+             * against the unisolated view from another thread. (Unisolated view
+             * is single-threaded.)
+             */
+            assertEquals(1, readView.vertexCount());
+            
+            final BlazeVertex b = graph.addVertex(T.id, "b");
+            graph.commit();
+
+            /*
+             * The read view still sees only one vertex, since it is still
+             * reading against the last commit point at the time the view was
+             * created. 
+             */
+            assertEquals(1, readView.vertexCount());
+            assertEquals(2, graph.vertexCount());
+            
+        } finally {
+            readView.close();
+        }
         
     }
     
     /**
      * Demonstration of the Sparql/PG API.
+     * <p/>
+     * 
      */
     @Test 
     public void demonstrateSparqlAPI() throws Exception {
+        
+        /*
+         * Bulk load the classic graph.
+         */
+        final TinkerGraph classic = TinkerFactory.createClassic();
+        graph.bulkLoad(classic);
+        graph.tx().commit();
+
+        /*
+         * "Who created a project named 'lop' that was also created by someone 
+         * who is 29 years old? Return the two creators."
+         * 
+         * gremlin> g.V().match(
+         *        __.as('a').out('created').as('b'),
+         *        __.as('b').has('name', 'lop'),
+         *        __.as('b').in('created').as('c'),
+         *        __.as('c').has('age', 29)).
+         *      select('a','c').by('name')
+         * ==>[a:marko, c:marko]
+         * ==>[a:josh, c:marko]
+         * ==>[a:peter, c:marko]
+         */
+        final String sparql = 
+                "select ?a ?c { " +
+                     // vertex named "lop"
+                "    ?lop <blaze:name> \"lop\" . " +
+                     // created by ?c
+                "    <<?c_id ?x ?lop>> rdfs:label \"created\" . " +
+                     // whose age is 29
+                "    ?c_id <blaze:age> \"29\"^^xsd:int . " +
+                     // created by ?a
+                "    <<?a_id ?y ?lop>> rdfs:label \"created\" . " +
+                     // gather names
+                "    ?a_id <blaze:name> ?a . " +
+                "    ?c_id <blaze:name> ?c . " +
+                "}";
+
+        /*
+         * Run the query, auto-translate RDF values to PG values.
+         */
+        final List<BlazeBindingSet> results = graph.select(sparql).collect();
+        
+        log.info(() -> results.stream());
+        assertEquals(3, results.size());
+        assertEquals(1, results.stream().map(bs -> bs.get("c")).distinct().count());
+        assertEquals(3, results.stream().map(bs -> bs.get("a")).distinct().count());
         
     }
     
