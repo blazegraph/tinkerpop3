@@ -401,4 +401,61 @@ BlazeGraphReadOnly extends BlazeGraphEmbedded and thus offers all the same opera
 
 **Important: Make sure to close the read-only view when you are done with it.**
 
+Sample usage of this API can be found in SampleCode.demonstrateConcurrencyAPI().
+
 ### Sparql API
+
+Since it is an RDF graph database at its core, Blazegraph supports the full Sparql 1.1 and Sparql Update 1.1 feature set.  Furthermore, Sparql query results are automatically translated back into property graph form (element ids, labels, property keys and values) using the BlazeValueFactory.  Thus Sparql queries run through the blazegraph-gremlin API will result in PG binding sets instead of RDF binding sets (for select queries) and BlazeGraphAtoms instead of RDF statements (for construct queries).
+
+Blazegraph has one of the fastest native query engines of any graph database.  Currently blazegraph-gremlin does not provide a native TraversalStrategy implementation for Gremlin.  Gremlin traversals will thus be executed via the graph API rather than compiled down into Sparql queries and run natively.  As such it is highly recommended that for the 1.0 release of this module you write any application queries or traversals with high performance requirements in Sparql rather than Gremlin.  Future releases will include a native Blazegraph TraversalStrategy that will execute Gremlin traversals directly against Blazegraph's ultra-fast query engine.  Please contact us for developer support if you would like help expressing your application's queries as Sparql in the most optimized fashion for Blazegraph.
+
+Sample usage of this API can be found in SampleCode.demonstrateSparqlAPI().  This example demonstrates how to formulate one of the gremlin queries from the Tinkerpop3 documentation as a Sparql query:
+
+    /*
+     * Bulk load the classic graph.
+     */
+    final TinkerGraph classic = TinkerFactory.createClassic();
+    graph.bulkLoad(classic);
+    graph.tx().commit();
+
+    /*
+     * "Who created a project named 'lop' that was also created by someone 
+     * who is 29 years old? Return the two creators."
+     * 
+     * gremlin> g.V().match(
+     *        __.as('a').out('created').as('b'),
+     *        __.as('b').has('name', 'lop'),
+     *        __.as('b').in('created').as('c'),
+     *        __.as('c').has('age', 29)).
+     *      select('a','c').by('name')
+     * ==>[a:marko, c:marko]
+     * ==>[a:josh, c:marko]
+     * ==>[a:peter, c:marko]
+     */
+    final String sparql = 
+            "select ?a ?c { " +
+                 // vertex named "lop"
+            "    ?lop <blaze:name> \"lop\" . " +
+                 // created by ?c
+            "    <<?c_id ?x ?lop>> rdfs:label \"created\" . " +
+                 // whose age is 29
+            "    ?c_id <blaze:age> \"29\"^^xsd:int . " +
+                 // created by ?a
+            "    <<?a_id ?y ?lop>> rdfs:label \"created\" . " +
+                 // gather names
+            "    ?a_id <blaze:name> ?a . " +
+            "    ?c_id <blaze:name> ?c . " +
+            "}";
+
+    /*
+     * Run the query, auto-translate RDF values to PG values.
+     */
+    final List<BlazeBindingSet> results = graph.select(sparql).collect();
+
+Which results in the following three binding sets:
+
+	[c=marko, a=marko]
+	[c=marko, a=josh]
+	[c=marko, a=peter]
+
+
