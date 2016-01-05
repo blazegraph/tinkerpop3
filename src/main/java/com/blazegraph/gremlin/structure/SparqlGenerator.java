@@ -88,6 +88,7 @@ class SparqlGenerator {
                 "select ?edge ?label ?fromLabel ?toLabel where {\n" +
                      VALUES +
                 "    bind(<<?from ?eid ?to>> as ?edge) .\n" +
+                "    filter(?eid != <LABEL>) .\n" +
                 "    filter(isURI(?from) && isURI(?to)) .\n" +
                 "    optional {\n" +
                 "        ?edge <LABEL> ?label .\n" +
@@ -157,6 +158,7 @@ class SparqlGenerator {
          */
         String FORWARD =
                 "    bind(<<?src ?id ?to>> as ?edge) .\n" +
+                "    filter(?id != <LABEL>) .\n" +
                 "    filter(isURI(?src) && isURI(?to)) .\n" +
                 "    optional {\n" +
                 "        ?src <LABEL> ?fromLabel .\n" +
@@ -169,6 +171,7 @@ class SparqlGenerator {
          */
         String REVERSE =
                 "    bind(<<?from ?id ?src>> as ?edge) .\n" +
+                "    filter(?id != <LABEL>) .\n" +
                 "    filter(isURI(?src) && isURI(?from)) .\n" +
                 "    optional {\n" +
                 "        ?src <LABEL> ?toLabel .\n" +

@@ -420,7 +420,8 @@ public abstract class BlazeGraph implements Graph {
         
         final BigdataValueFactory rdfvf = rdfValueFactory();
         final BigdataURI uri = rdfvf.asValue(vf.elementURI(id));
-        final Literal rdfLabel = rdfvf.asValue(vf.toLiteral(label));
+//        final Literal rdfLabel = rdfvf.asValue(vf.toLiteral(label));
+        final BigdataURI rdfLabel = rdfvf.asValue(vf.elementURI(label));
         
         final RepositoryConnection cxn = cxn();
         Code.wrapThrow(() -> {
@@ -459,8 +460,9 @@ public abstract class BlazeGraph implements Graph {
         final BigdataValueFactory rdfvf = rdfValueFactory();
         
         final URI uri = rdfvf.asValue(vf.elementURI(id));
-        final Literal rdfLabel = rdfvf.asValue(vf.toLiteral(label));
-        
+//        final Literal rdfLabel = rdfvf.asValue(vf.toLiteral(label));
+        final BigdataURI rdfLabel = rdfvf.asValue(vf.elementURI(label));
+
         final BigdataStatement edgeStmt = 
                 rdfvf.createStatement(from.rdfId(), uri, to.rdfId());
         
@@ -493,10 +495,11 @@ public abstract class BlazeGraph implements Graph {
 
         final BigdataValueFactory rdfvf = rdfValueFactory();
         
-        final URI uri = rdfvf.asValue(vf.elementURI(id));
-        final Literal rdfLabel = rdfvf.asValue(vf.toLiteral(label));
-        final URI fromURI = rdfvf.asValue(vf.elementURI(fromId));
-        final URI toURI = rdfvf.asValue(vf.elementURI(toId));
+        final BigdataURI uri = rdfvf.asValue(vf.elementURI(id));
+//        final Literal rdfLabel = rdfvf.asValue(vf.toLiteral(label));
+        final BigdataURI rdfLabel = rdfvf.asValue(vf.elementURI(label));
+        final BigdataURI fromURI = rdfvf.asValue(vf.elementURI(fromId));
+        final BigdataURI toURI = rdfvf.asValue(vf.elementURI(toId));
         
         final BigdataStatement edgeStmt = 
                 rdfvf.createStatement(fromURI, uri, toURI);
@@ -1276,7 +1279,8 @@ public abstract class BlazeGraph implements Graph {
         Function<BindingSet, Vertex> vertex = bs -> {
             
             final BigdataURI uri = (BigdataURI) bs.getValue("vertex");
-            final Literal label = (Literal) bs.getValue("label");
+//            final Literal label = (Literal) bs.getValue("label");
+            final BigdataURI label = (BigdataURI) bs.getValue("label");
             final BlazeVertex vertex = new BlazeVertex(BlazeGraph.this, uri, label);
             return vertex;
             
@@ -1288,16 +1292,20 @@ public abstract class BlazeGraph implements Graph {
         private final 
         Function<BindingSet, Edge> edge = bs -> {
             
+            log.debug(() -> bs);
             final BigdataBNode s = (BigdataBNode) bs.getValue("edge");
             final BigdataStatement stmt = s.getStatement();
-            final Literal label = (Literal) bs.getValue("label");
+//            final Literal label = (Literal) bs.getValue("label");
+            final BigdataURI label = (BigdataURI) bs.getValue("label");;
             final BigdataURI fromURI = (BigdataURI) stmt.getSubject();
-            final Literal fromLabel = (Literal) bs.getValue("fromLabel");
+//            final Literal fromLabel = (Literal) bs.getValue("fromLabel");
+            final BigdataURI fromLabel = (BigdataURI) bs.getValue("fromLabel");;
             final BlazeVertex from = 
                     new BlazeVertex(BlazeGraph.this, fromURI, fromLabel);
             
             final BigdataURI toURI = (BigdataURI) stmt.getObject();
-            final Literal toLabel = (Literal) bs.getValue("toLabel");
+//            final Literal toLabel = (Literal) bs.getValue("toLabel");
+            final BigdataURI toLabel = (BigdataURI) bs.getValue("toLabel");;
             final BlazeVertex to = 
                     new BlazeVertex(BlazeGraph.this, toURI, toLabel);
             return new BlazeEdge(BlazeGraph.this, stmt, label, from, to);

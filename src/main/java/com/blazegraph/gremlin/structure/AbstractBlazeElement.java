@@ -26,7 +26,7 @@ import java.util.Objects;
 
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
-import org.openrdf.model.Literal;
+import org.openrdf.model.URI;
 
 import com.bigdata.rdf.model.BigdataURI;
 
@@ -56,10 +56,10 @@ abstract class AbstractBlazeElement implements BlazeElement {
     /**
      * The Literal representation of the element label.
      */
-    protected final Literal label;
+    protected final BigdataURI label;
     
     AbstractBlazeElement(final BlazeGraph graph, final BigdataURI uri, 
-            final Literal label) {
+            final BigdataURI label) {
         Objects.requireNonNull(graph);
         Objects.requireNonNull(uri);
         Objects.requireNonNull(label);
@@ -87,7 +87,7 @@ abstract class AbstractBlazeElement implements BlazeElement {
      */
     @Override
     public String label() {
-        return (String) vf.fromLiteral(label);
+        return (String) vf.fromURI(label);
     }
     
     /**
@@ -96,7 +96,7 @@ abstract class AbstractBlazeElement implements BlazeElement {
      * @see {@link BlazeElement#rdfLabel()}
      */
     @Override
-    public Literal rdfLabel() {
+    public URI rdfLabel() {
         return label;
     }
 

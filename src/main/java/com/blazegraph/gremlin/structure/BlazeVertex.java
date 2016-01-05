@@ -58,7 +58,7 @@ public class BlazeVertex extends AbstractBlazeElement implements Vertex, BlazeEl
      * Construct an instance.
      */
     BlazeVertex(final BlazeGraph graph, final BigdataURI uri, 
-            final Literal label) {
+            final BigdataURI label) {
         super(graph, uri, label);
     }
     
