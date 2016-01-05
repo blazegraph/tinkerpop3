@@ -1511,6 +1511,7 @@ public abstract class BlazeGraph implements Graph {
         private final 
         Function<BindingSet, Optional<BlazeGraphEdit>> history = bs -> {
             
+            log.debug(() -> bs);
             final BigdataBNode sid = (BigdataBNode) bs.getValue("sid");
             final BigdataStatement stmt = sid.getStatement();
             final URI a = (URI) bs.getValue("action");
