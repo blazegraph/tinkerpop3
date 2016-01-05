@@ -41,7 +41,7 @@ import com.blazegraph.gremlin.util.CloseableIterator;
  * Vertex existence is represented as one triples as follows:
  * <p/>
  * <pre>
- *     :vertexId rdfs:label "label" .
+ *     :vertexId rdf:type :label .
  * </pre>
  * <p/>
  * Vertex properties are represented as follows:
@@ -58,7 +58,7 @@ public class BlazeVertex extends AbstractBlazeElement implements Vertex, BlazeEl
      * Construct an instance.
      */
     BlazeVertex(final BlazeGraph graph, final BigdataURI uri, 
-            final Literal label) {
+            final BigdataURI label) {
         super(graph, uri, label);
     }
     

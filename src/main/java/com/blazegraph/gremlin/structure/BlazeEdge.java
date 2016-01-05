@@ -30,10 +30,10 @@ import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
-import org.openrdf.model.Literal;
 
 import com.bigdata.rdf.model.BigdataBNode;
 import com.bigdata.rdf.model.BigdataStatement;
+import com.bigdata.rdf.model.BigdataURI;
 import com.bigdata.rdf.model.BigdataValueFactory;
 import com.blazegraph.gremlin.structure.BlazeGraphFeatures.Graph;
 import com.blazegraph.gremlin.util.CloseableIterator;
@@ -45,7 +45,7 @@ import com.blazegraph.gremlin.util.CloseableIterator;
  * <p/>
  * <pre>
  *     :fromId :edgeId :toId .
- *     <<:fromId :edgeId :toId>> rdfs:label "label" .
+ *     <<:fromId :edgeId :toId>> rdf:type :label .
  * </pre>
  * <p/>
  * Edge properties are represented as follows:
@@ -72,7 +72,7 @@ public class BlazeEdge extends AbstractBlazeElement implements Edge, BlazeReifie
      * Construct an instance.
      */
     BlazeEdge(final BlazeGraph graph, final BigdataStatement stmt, 
-            final Literal label, final BlazeVertex from, final BlazeVertex to) {
+            final BigdataURI label, final BlazeVertex from, final BlazeVertex to) {
         super(graph, stmt.getPredicate(), label);
         final BigdataValueFactory rdfvf = graph.rdfValueFactory();
         this.sid = rdfvf.createBNode(stmt);
@@ -84,7 +84,7 @@ public class BlazeEdge extends AbstractBlazeElement implements Edge, BlazeReifie
      * {@link BlazeGraph#bulkLoad(Graph)}
      */
     BlazeEdge(final BlazeGraph graph, final BigdataStatement stmt, 
-            final Literal label) {
+            final BigdataURI label) {
         super(graph, stmt.getPredicate(), label);
         final BigdataValueFactory rdfvf = graph.rdfValueFactory();
         this.sid = rdfvf.createBNode(stmt);

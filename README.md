@@ -45,16 +45,16 @@ Property graph values must be converted into RDF values and vice versa.  Blazegr
 
 Blazegraph accepts user-supplied IDs (strings only) for vertices and edges.  If no id is supplied a UUID will be generated.  By default, TP3 ids and property keys are converted into URIs by prepending a <blaze:> namespace prefix.  Property values are simply converted into datatyped literals.  
 
-Two fixed URIs are used and provided by the BlazeValueFactory to represent element labels (rdfs:label by default) and property values for Cardinality.list vertex properties (rdf:value by default).  These can also be overriden as desired.
+Two fixed URIs are used and provided by the BlazeValueFactory to represent element labels (rdf:type by default) and property values for Cardinality.list vertex properties (rdf:value by default).  These can also be overriden as desired.
 
 Property graph elements are represented as follows in Blazegraph:
 
 	# BlazeVertex john = graph.addVertex(T.id, "john", T.label, "person");
-	blaze:john rdfs:label "person" .
+	blaze:john rdf:type blaze:person .
 	
 	# BlazeEdge knows = graph.addEdge(john, mary, "knows", T.id, "k01");
 	blaze:john blaze:k01 blaze:mary .
-	<<blaze:john blaze:k01 blaze:mary>> rdfs:label "knows" .
+	<<blaze:john blaze:k01 blaze:mary>> rdf:type blaze:knows .
 	
 Vertices requires one statement, edges require two.
 
@@ -74,26 +74,26 @@ Cardinality.set and Cardinality.single are modeled the same way:
 Cardinality.list is modeled differently:
 	
 	# VertexProperty list = john.property(Cardinality.list, "city", "salt lake city", "acl", "public");
-	blaze:john blaze:city "12765"^^internal:packedLong .
-	<<blaze:john blaze:city "12765"^^internal:packedLong>> rdf:value "salt lake city" .
-	<<blaze:john blaze:city "12765"^^internal:packedLong>> blaze:acl "public" .
+	blaze:john blaze:city "12765"^^bg:listIndex .
+	<<blaze:john blaze:city "12765"^^bg:listIndex>> rdf:value "salt lake city" .
+	<<blaze:john blaze:city "12765"^^bg:listIndex>> blaze:acl "public" .
 	
-Cardinality.list uses a specially datatyped and monotonically increasing internal identifier to represent the vertex property (the actual datatype is `<http://www.bigdata.com/rdf/datatype#packedLong>`).  This identifier serves to manage duplicate list values and ordering of list items.  It's important to note this difference as different cardinalities will require different SPARQL queries.
+Cardinality.list uses a specially datatyped and monotonically increasing internal identifier to represent the vertex property (the actual datatype is `<http://www.blazegraph.com/rdf/datatype#listIndex>`).  This identifier serves to manage duplicate list values and ordering of list items.  It's important to note this difference as different cardinalities will require different SPARQL queries.
 
 #### Putting it all together: The Crew
 
 Here is how the Tinkerpop3 "Crew" dataset looks when loaded into Blazegraph.  Human-friendly IDs have been assigned to vertices and edge UUIDs have been abbreviated to 5 characters for brevity.
 
-    blaze:tinkergraph rdfs:label "software" ;
+    blaze:tinkergraph rdf:type blaze:software ;
                       blaze:name "tinkergraph" .
                 
-    blaze:gremlin rdfs:label "software" ;
+    blaze:gremlin rdf:type blaze:software ;
                   blaze:name "gremlin" ;
                   blaze:48f63 blaze:tinkergraph .
                 
-    <<blaze:gremlin blaze:48f63 blaze:tinkergraph>> rdfs:label "traverses" .                
+    <<blaze:gremlin blaze:48f63 blaze:tinkergraph>> rdf:type blaze:traverses .                
                 
-    blaze:daniel rdfs:label "person" ;
+    blaze:daniel rdf:type blaze:person ;
                  blaze:name "daniel" ;
                  blaze:81056 blaze:tinkergraph ;
                  blaze:e09ac blaze:gremlin ;
@@ -101,9 +101,9 @@ Here is how the Tinkerpop3 "Crew" dataset looks when loaded into Blazegraph.  Hu
                  blaze:location "kaiserslautern" ;
                  blaze:location "aachen" .
                 
-    <<blaze:daniel blaze:81056 blaze:tinkergraph>>   rdfs:label "uses" ;
+    <<blaze:daniel blaze:81056 blaze:tinkergraph>>   rdf:type blaze:uses ;
                                                      blaze:skill "3"^^xsd:int .
-    <<blaze:daniel blaze:e09ac blaze:gremlin>>       rdfs:label "uses" ;
+    <<blaze:daniel blaze:e09ac blaze:gremlin>>       rdf:type blaze:uses ;
                                                      blaze:skill "5"^^xsd:int .
     <<blaze:daniel blaze:location "spremberg">>      blaze:startTime "1982"^^xsd:int ;
                                                      blaze:endTime "2005"^^xsd:int .
@@ -111,7 +111,7 @@ Here is how the Tinkerpop3 "Crew" dataset looks when loaded into Blazegraph.  Hu
                                                      blaze:endTime "2009"^^xsd:int .
     <<blaze:daniel blaze:location "aachen">>         blaze:startTime "2009"^^xsd:int .
                 
-    blaze:marko rdfs:label "person" ;
+    blaze:marko rdf:type blaze:person ;
                 blaze:name "marko" ;
                 blaze:42af2 blaze:gremlin ;
                 blaze:4edec blaze:gremlin ;
@@ -122,13 +122,13 @@ Here is how the Tinkerpop3 "Crew" dataset looks when loaded into Blazegraph.  Hu
                 blaze:location "brussels" ;
                 blaze:location "santa fe" .
 
-    <<blaze:marko blaze:42af2 blaze:gremlin>>     rdfs:label "develops" ;
+    <<blaze:marko blaze:42af2 blaze:gremlin>>     rdf:type blaze:develops ;
                                                   blaze:since "2009"^^xsd:int .
-    <<blaze:marko blaze:4edec blaze:gremlin>>     rdfs:label "uses" ;
+    <<blaze:marko blaze:4edec blaze:gremlin>>     rdf:type blaze:uses ;
                                                   blaze:skill "4"^^xsd:int .
-    <<blaze:marko blaze:61d50 blaze:tinkergraph>> rdfs:label "develops" ;
+    <<blaze:marko blaze:61d50 blaze:tinkergraph>> rdf:type blaze:develops ;
                                                   blaze:since "2010"^^xsd:int .
-    <<blaze:marko blaze:68c12 blaze:tinkergraph>> rdfs:label "uses" ;
+    <<blaze:marko blaze:68c12 blaze:tinkergraph>> rdf:type blaze:uses ;
                                                   blaze:skill "5"^^xsd:int .
     <<blaze:marko blaze:location "san diego">>    blaze:startTime "1997"^^xsd:int ;
                                                   blaze:endTime "2001"^^xsd:int .
@@ -138,7 +138,7 @@ Here is how the Tinkerpop3 "Crew" dataset looks when loaded into Blazegraph.  Hu
                                                   blaze:endTime "2005"^^xsd:int .
     <<blaze:marko blaze:location "santa fe">>     blaze:startTime "2005"^^xsd:int .
     
-    blaze:stephen rdfs:label "person" ;
+    blaze:stephen rdf:type blaze:person ;
                   blaze:name "stephen" ;
                   blaze:15869 blaze:tinkergraph ;
                   blaze:1e9c3 blaze:gremlin ;
@@ -148,13 +148,13 @@ Here is how the Tinkerpop3 "Crew" dataset looks when loaded into Blazegraph.  Hu
                   blaze:location "dulles" ;
                   blaze:location "purcellville" .
 
-    <<blaze:stephen blaze:15869 blaze:tinkergraph>> rdfs:label "develops" ;
+    <<blaze:stephen blaze:15869 blaze:tinkergraph>> rdf:type blaze:develops ;
                                                     blaze:since "2011"^^xsd:int .
-    <<blaze:stephen blaze:1e9c3 blaze:gremlin>>     rdfs:label "develops" ;
+    <<blaze:stephen blaze:1e9c3 blaze:gremlin>>     rdf:type blaze:develops ;
                                                     blaze:since "2010"^^xsd:int .
-    <<blaze:stephen blaze:bf48d blaze:tinkergraph>> rdfs:label "uses" ;
+    <<blaze:stephen blaze:bf48d blaze:tinkergraph>> rdf:type blaze:uses ;
                                                     blaze:skill "4"^^xsd:int .
-    <<blaze:stephen blaze:bff3c blaze:gremlin>>     rdfs:label "uses" ;
+    <<blaze:stephen blaze:bff3c blaze:gremlin>>     rdf:type blaze:uses ;
                                                     blaze:skill "5"^^xsd:int .
     <<blaze:stephen blaze:location "centreville">>  blaze:startTime "1990"^^xsd:int ;
                                                     blaze:endTime "2000"^^xsd:int .
@@ -162,7 +162,7 @@ Here is how the Tinkerpop3 "Crew" dataset looks when loaded into Blazegraph.  Hu
                                                     blaze:endTime "2006"^^xsd:int .
     <<blaze:stephen blaze:location "purcellville">> blaze:startTime "2006"^^xsd:int .
     
-    blaze:matthias rdfs:label "person" ;
+    blaze:matthias rdf:type blaze:person ;
                 blaze:name "matthias" ;
                 blaze:7373e blaze:gremlin ;
                 blaze:e5a5d blaze:gremlin ;
@@ -172,11 +172,11 @@ Here is how the Tinkerpop3 "Crew" dataset looks when loaded into Blazegraph.  Hu
                 blaze:location "oakland" ;
                 blaze:location "seattle" .
     
-    <<blaze:matthias blaze:7373e blaze:gremlin>>     rdfs:label "develops" ;
+    <<blaze:matthias blaze:7373e blaze:gremlin>>     rdf:type blaze:develops ;
                                                      blaze:since "2012"^^xsd:int .
-    <<blaze:matthias blaze:e5a5d blaze:gremlin>>     rdfs:label "uses" ;
+    <<blaze:matthias blaze:e5a5d blaze:gremlin>>     rdf:type blaze:uses ;
                                                      blaze:skill "3"^^xsd:int .
-    <<blaze:matthias blaze:ef89a blaze:tinkergraph>> rdfs:label "uses" ;
+    <<blaze:matthias blaze:ef89a blaze:tinkergraph>> rdf:type blaze:uses ;
                                                      blaze:skill "3"^^xsd:int .
     <<blaze:matthias blaze:location "bremen">>       blaze:startTime "2004"^^xsd:int ;
                                                      blaze:endTime "2007"^^xsd:int .
@@ -184,7 +184,8 @@ Here is how the Tinkerpop3 "Crew" dataset looks when loaded into Blazegraph.  Hu
                                                      blaze:endTime "2011"^^xsd:int .
     <<blaze:matthias blaze:location "oakland">>      blaze:startTime "2011"^^xsd:int ;
                                                      blaze:endTime "2014"^^xsd:int .
-    <<blaze:matthias blaze:location "seattle">>      blaze:startTime "2014"^^xsd:int .	
+    <<blaze:matthias blaze:location "seattle">>      blaze:startTime "2014"^^xsd:int .
+        
 ## Getting up and running with Blazegraph/TP3
 
 Currently **BlazeGraphEmbedded** is the only concrete implementation of the Blazegraph Tinkerpop3 API.  BlazeGraphEmbedded is backed by an embedded (same JVM) instance of Blazegraph.  This puts the enterprise features of Blazegraph (high-availability, scale-out, etc.) out of reach for the 1.0 version of the TP3 integration, since those features are accessed via Blazegraph's client/server API.  A TP3 integration with the client/server version of Blazegraph is reserved for a future blazegraph-tinkerpop release.
@@ -439,11 +440,11 @@ Sample usage of this API can be found in SampleCode.demonstrateSparqlAPI().  Thi
                  // vertex named "lop"
             "    ?lop <blaze:name> \"lop\" . " +
                  // created by ?c
-            "    <<?c_id ?x ?lop>> rdfs:label \"created\" . " +
+            "    <<?c_id ?x ?lop>> rdf:type <blaze:created> . " +
                  // whose age is 29
             "    ?c_id <blaze:age> \"29\"^^xsd:int . " +
                  // created by ?a
-            "    <<?a_id ?y ?lop>> rdfs:label \"created\" . " +
+            "    <<?a_id ?y ?lop>> rdf:type <blaze:created> . " +
                  // gather names
             "    ?a_id <blaze:name> ?a . " +
             "    ?c_id <blaze:name> ?c . " +

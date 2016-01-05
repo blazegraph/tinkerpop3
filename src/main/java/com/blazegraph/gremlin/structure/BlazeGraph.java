@@ -230,7 +230,7 @@ public abstract class BlazeGraph implements Graph {
     /**
      * URI used for labeling elements.
      */
-    private final URI LABEL;
+    private final URI TYPE;
     
     /**
      * URI used for list item values.
@@ -282,7 +282,7 @@ public abstract class BlazeGraph implements Graph {
         this.sparqlLogMax = config.getInt(Options.SPARQL_LOG_MAX, 
                                           Options.DEFAULT_SPARQL_LOG_MAX);
         
-        this.LABEL = vf.label();
+        this.TYPE = vf.type();
         this.VALUE = vf.value();
         this.LI_DATATYPE = vf.liDatatype();
         
@@ -420,11 +420,11 @@ public abstract class BlazeGraph implements Graph {
         
         final BigdataValueFactory rdfvf = rdfValueFactory();
         final BigdataURI uri = rdfvf.asValue(vf.elementURI(id));
-        final Literal rdfLabel = rdfvf.asValue(vf.toLiteral(label));
+        final BigdataURI rdfLabel = rdfvf.asValue(vf.typeURI(label));
         
         final RepositoryConnection cxn = cxn();
         Code.wrapThrow(() -> {
-            cxn.add(uri, LABEL, rdfLabel);
+            cxn.add(uri, TYPE, rdfLabel);
         });
         
         final BlazeVertex vertex = new BlazeVertex(this, uri, rdfLabel);
@@ -459,8 +459,8 @@ public abstract class BlazeGraph implements Graph {
         final BigdataValueFactory rdfvf = rdfValueFactory();
         
         final URI uri = rdfvf.asValue(vf.elementURI(id));
-        final Literal rdfLabel = rdfvf.asValue(vf.toLiteral(label));
-        
+        final BigdataURI rdfLabel = rdfvf.asValue(vf.typeURI(label));
+
         final BigdataStatement edgeStmt = 
                 rdfvf.createStatement(from.rdfId(), uri, to.rdfId());
         
@@ -468,8 +468,8 @@ public abstract class BlazeGraph implements Graph {
         Code.wrapThrow(() -> {
             // blaze:person:1 blaze:knows:7 blaze:person:2 .
             cxn.add(edgeStmt);
-            // <<blaze:person:1 blaze:knows:7 blaze:person:2>> rdfs:label "knows" .
-            cxn.add(rdfvf.createBNode(edgeStmt), LABEL, rdfLabel);
+            // <<blaze:person:1 blaze:knows:7 blaze:person:2>> rdf:type "knows" .
+            cxn.add(rdfvf.createBNode(edgeStmt), TYPE, rdfLabel);
         });
         
         final BlazeEdge edge = new BlazeEdge(this, edgeStmt, rdfLabel, from, to);
@@ -493,10 +493,10 @@ public abstract class BlazeGraph implements Graph {
 
         final BigdataValueFactory rdfvf = rdfValueFactory();
         
-        final URI uri = rdfvf.asValue(vf.elementURI(id));
-        final Literal rdfLabel = rdfvf.asValue(vf.toLiteral(label));
-        final URI fromURI = rdfvf.asValue(vf.elementURI(fromId));
-        final URI toURI = rdfvf.asValue(vf.elementURI(toId));
+        final BigdataURI uri = rdfvf.asValue(vf.elementURI(id));
+        final BigdataURI rdfLabel = rdfvf.asValue(vf.typeURI(label));
+        final BigdataURI fromURI = rdfvf.asValue(vf.elementURI(fromId));
+        final BigdataURI toURI = rdfvf.asValue(vf.elementURI(toId));
         
         final BigdataStatement edgeStmt = 
                 rdfvf.createStatement(fromURI, uri, toURI);
@@ -505,8 +505,8 @@ public abstract class BlazeGraph implements Graph {
         Code.wrapThrow(() -> {
             // blaze:person:1 blaze:knows:7 blaze:person:2 .
             cxn.add(edgeStmt);
-            // <<blaze:person:1 blaze:knows:7 blaze:person:2>> rdfs:label "knows" .
-            cxn.add(rdfvf.createBNode(edgeStmt), LABEL, rdfLabel);
+            // <<blaze:person:1 blaze:knows:7 blaze:person:2>> rdf:type "knows" .
+            cxn.add(rdfvf.createBNode(edgeStmt), TYPE, rdfLabel);
         });
         
         final BlazeEdge edge = new BlazeEdge(this, edgeStmt, rdfLabel);
@@ -1276,7 +1276,8 @@ public abstract class BlazeGraph implements Graph {
         Function<BindingSet, Vertex> vertex = bs -> {
             
             final BigdataURI uri = (BigdataURI) bs.getValue("vertex");
-            final Literal label = (Literal) bs.getValue("label");
+//            final Literal label = (Literal) bs.getValue("label");
+            final BigdataURI label = (BigdataURI) bs.getValue("label");
             final BlazeVertex vertex = new BlazeVertex(BlazeGraph.this, uri, label);
             return vertex;
             
@@ -1288,16 +1289,20 @@ public abstract class BlazeGraph implements Graph {
         private final 
         Function<BindingSet, Edge> edge = bs -> {
             
+            log.debug(() -> bs);
             final BigdataBNode s = (BigdataBNode) bs.getValue("edge");
             final BigdataStatement stmt = s.getStatement();
-            final Literal label = (Literal) bs.getValue("label");
+//            final Literal label = (Literal) bs.getValue("label");
+            final BigdataURI label = (BigdataURI) bs.getValue("label");;
             final BigdataURI fromURI = (BigdataURI) stmt.getSubject();
-            final Literal fromLabel = (Literal) bs.getValue("fromLabel");
+//            final Literal fromLabel = (Literal) bs.getValue("fromLabel");
+            final BigdataURI fromLabel = (BigdataURI) bs.getValue("fromLabel");;
             final BlazeVertex from = 
                     new BlazeVertex(BlazeGraph.this, fromURI, fromLabel);
             
             final BigdataURI toURI = (BigdataURI) stmt.getObject();
-            final Literal toLabel = (Literal) bs.getValue("toLabel");
+//            final Literal toLabel = (Literal) bs.getValue("toLabel");
+            final BigdataURI toLabel = (BigdataURI) bs.getValue("toLabel");;
             final BlazeVertex to = 
                     new BlazeVertex(BlazeGraph.this, toURI, toLabel);
             return new BlazeEdge(BlazeGraph.this, stmt, label, from, to);
@@ -1392,12 +1397,12 @@ public abstract class BlazeGraph implements Graph {
             
             if (s instanceof URI) {
                 
-                if (o instanceof URI) {
+                if (o instanceof URI && !TYPE.equals(p)) {
                     // blaze:a blaze:x blaze:b
                     
                     /*
                      * We actually want to ignore these and wait for
-                     * <<blaze:a blaze:x blaze:b>> rdfs:label "label" .
+                     * <<blaze:a blaze:x blaze:b>> rdf:type blaze:label .
                      * to emit a VertexAtom.
                      */
                     return Optional.empty();
@@ -1405,18 +1410,18 @@ public abstract class BlazeGraph implements Graph {
                 
                 final BigdataURI uri = (BigdataURI) s;
                 final String vertexId = vf.fromURI(uri);
-                final Literal lit = (Literal) o;
                 
-                if (LABEL.equals(p)) {
-                    // blaze:a rdfs:label "label" .
+                if (TYPE.equals(p)) {
+                    // blaze:a rdf:type "label" .
                     
-                    final String label = (String) vf.fromLiteral(lit);
+                    final String label = vf.fromURI((URI) o);
                     
                     return Optional.of(
                             new BlazeGraphAtom.VertexAtom(vertexId, label));
                     
                 } else {
 
+                    final Literal lit = (Literal) o;
                     final URI dt = lit.getDatatype();
                     
                     if (dt != null && LI_DATATYPE.equals(dt)) {
@@ -1447,15 +1452,14 @@ public abstract class BlazeGraph implements Graph {
                 
                 final BigdataBNode sid = (BigdataBNode) s;
                 final BigdataStatement reified = sid.getStatement();
-                final Literal lit = (Literal) o;
                 
-                if (LABEL.equals(p)) {
-                    // <<blaze:a blaze:x blaze:b>> rdfs:label "label" .
+                if (TYPE.equals(p)) {
+                    // <<blaze:a blaze:x blaze:b>> rdf:type "label" .
                     
                     final String edgeId = vf.fromURI(reified.getPredicate());
                     final String fromId = vf.fromURI((URI) reified.getSubject());
                     final String toId = vf.fromURI((URI) reified.getObject());
-                    final String label = (String) vf.fromLiteral(lit);
+                    final String label = vf.fromURI((URI) o);
                     
                     return Optional.of(
                         new BlazeGraphAtom.EdgeAtom(edgeId, label, fromId, toId));
@@ -1465,7 +1469,7 @@ public abstract class BlazeGraph implements Graph {
                     
                     final String vertexId = vf.fromURI((URI) reified.getSubject());
                     final String key = vf.fromURI(reified.getPredicate());
-                    final Object val = vf.fromLiteral(lit);
+                    final Object val = vf.fromLiteral((Literal) o);
                     final String vpId = vertexPropertyId(reified);
                     
                     return Optional.of(
@@ -1474,7 +1478,7 @@ public abstract class BlazeGraph implements Graph {
                 } else {
                     
                     final String key = vf.fromURI(p);
-                    final Object val = vf.fromLiteral(lit);
+                    final Object val = vf.fromLiteral((Literal) o);
                     
                     if (reified.getObject() instanceof URI) {
                         // <<blaze:a blaze:x blaze:b>> blaze:key "val" .
