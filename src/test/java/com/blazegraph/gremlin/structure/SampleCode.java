@@ -545,11 +545,11 @@ public class SampleCode {
                      // vertex named "lop"
                 "    ?lop <blaze:name> \"lop\" . " +
                      // created by ?c
-                "    <<?c_id ?x ?lop>> rdfs:label \"created\" . " +
+                "    <<?c_id ?x ?lop>> rdf:type <blaze:created> . " +
                      // whose age is 29
                 "    ?c_id <blaze:age> \"29\"^^xsd:int . " +
                      // created by ?a
-                "    <<?a_id ?y ?lop>> rdfs:label \"created\" . " +
+                "    <<?a_id ?y ?lop>> rdf:type <blaze:created> . " +
                      // gather names
                 "    ?a_id <blaze:name> ?a . " +
                 "    ?c_id <blaze:name> ?c . " +

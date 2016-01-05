@@ -45,7 +45,7 @@ import com.blazegraph.gremlin.util.CloseableIterator;
  * <p/>
  * <pre>
  *     :fromId :edgeId :toId .
- *     <<:fromId :edgeId :toId>> rdfs:label "label" .
+ *     <<:fromId :edgeId :toId>> rdf:type :label .
  * </pre>
  * <p/>
  * Edge properties are represented as follows:

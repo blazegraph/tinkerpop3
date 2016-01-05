@@ -28,7 +28,6 @@ import org.openrdf.model.ValueFactory;
 import org.openrdf.model.impl.URIImpl;
 import org.openrdf.model.impl.ValueFactoryImpl;
 import org.openrdf.model.vocabulary.RDF;
-import org.openrdf.model.vocabulary.RDFS;
 
 import com.bigdata.rdf.internal.XSD;
 import com.bigdata.rdf.sail.RDRHistory;
@@ -63,9 +62,9 @@ public interface BlazeValueFactory {
         String NAMESPACE = "blaze:";
         
         /**
-         * URI used for labeling elements.
+         * URI used for typing elements.
          */
-        URI LABEL = RDFS.LABEL;
+        URI TYPE = RDF.TYPE;
         
         /**
          * URI used for list item values.
@@ -78,14 +77,19 @@ public interface BlazeValueFactory {
         URI LI_DATATYPE = ListIndexExtension.DATATYPE;
         
         /**
-         * Template for stamping type element URIs (blaze:id).
+         * Template for stamping element URIs (blaze:id).
          */
         String ELEMENT_URI_TEMPLATE = NAMESPACE + "%s";
 
         /**
-         * Template for stamping type property URIs (blaze:key).
+         * Template for stamping property key URIs (blaze:key).
          */
         String PROPERTY_URI_TEMPLATE = ELEMENT_URI_TEMPLATE;
+        
+        /**
+         * Template for stamping type URIs (blaze:type).
+         */
+        String TYPE_URI_TEMPLATE = ELEMENT_URI_TEMPLATE;
         
         /**
          * Default RDF value factory.
@@ -95,15 +99,15 @@ public interface BlazeValueFactory {
     }
     
     /**
-     * URI used for element labels.
+     * URI used for element labels (typing).
      * 
-     * @see {@link Defaults#LABEL}
+     * @see {@link Defaults#TYPE}
      * 
      * @return
      *          URI used for element labels.
      */
-    default URI label() {
-        return Defaults.LABEL;
+    default URI type() {
+        return Defaults.TYPE;
     }
     
     /**
@@ -173,7 +177,7 @@ public interface BlazeValueFactory {
     /**
      * Convert an property key into an RDF URI.
      * <p/>
-     * Default behavior is to prepend the <blaze:> namespace to the id.
+     * Default behavior is to prepend the <blaze:> namespace to the key.
      * 
      * @param key
      *          property graph property key
@@ -185,10 +189,24 @@ public interface BlazeValueFactory {
     }
     
     /**
-     * Convert an RDF URI (element id or property key) back into a string.
+     * Convert an element label (type) into an RDF URI.
+     * <p/>
+     * Default behavior is to prepend the <blaze:> namespace to the label.
+     * 
+     * @param key
+     *          property graph element label
+     * @return
+     *          RDF URI representation
+     */
+    default URI typeURI(final String label) {
+        return new URIImpl(String.format(Defaults.TYPE_URI_TEMPLATE, label));
+    }
+    
+    /**
+     * Convert an RDF URI (element id/label or property key) back into a string.
      * 
      * @param uri
-     *          RDF representation of an element id or property key
+     *          RDF representation of an element id/label or property key
      * @return
      *          property graph (string) representation
      */

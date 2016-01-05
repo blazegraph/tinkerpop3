@@ -69,7 +69,7 @@ class SparqlGenerator {
         String VERTICES =
                 "select ?vertex ?label where {\n" +
                      VALUES +
-                "    ?vertex <LABEL> ?label .\n" +
+                "    ?vertex <TYPE> ?label .\n" +
                 "    filter(isURI(?vertex)) .\n" +
                 "}";
         
@@ -78,7 +78,7 @@ class SparqlGenerator {
          */
         String VERTEX_COUNT =
                 "select (count(?vertex) as ?count) where {\n" +
-                "    ?vertex <LABEL> ?label . filter(isURI(?vertex)) .\n" +
+                "    ?vertex <TYPE> ?label . filter(isURI(?vertex)) .\n" +
                 "}";
         
         /**
@@ -88,12 +88,12 @@ class SparqlGenerator {
                 "select ?edge ?label ?fromLabel ?toLabel where {\n" +
                      VALUES +
                 "    bind(<<?from ?eid ?to>> as ?edge) .\n" +
-                "    filter(?eid != <LABEL>) .\n" +
+                "    filter(?eid != <TYPE>) .\n" +
                 "    filter(isURI(?from) && isURI(?to)) .\n" +
                 "    optional {\n" +
-                "        ?edge <LABEL> ?label .\n" +
-                "        ?from <LABEL> ?fromLabel .\n" +
-                "        ?to <LABEL> ?toLabel .\n" +
+                "        ?edge <TYPE> ?label .\n" +
+                "        ?from <TYPE> ?fromLabel .\n" +
+                "        ?to <TYPE> ?toLabel .\n" +
                 "    }" +
                 "}";
 
@@ -102,7 +102,7 @@ class SparqlGenerator {
          */
         String EDGE_COUNT =
                 "select (count(?edge) as ?count) where {\n" +
-                "    ?edge <LABEL> ?label . filter(!isURI(?edge)) .\n" +
+                "    ?edge <TYPE> ?label . filter(!isURI(?edge)) .\n" +
                 "}";
         
         /**
@@ -113,7 +113,7 @@ class SparqlGenerator {
                      VALUES + 
                 "    ?s ?key ?val .\n" +
                 "    filter(isLiteral(?val)) .\n" +
-                "    filter(?key not in(<LABEL>,<VALUE>,<ADDED>,<REMOVED>)) .\n" +
+                "    filter(?key not in(<TYPE>,<VALUE>,<ADDED>,<REMOVED>)) .\n" +
                 "}";
         
         /**
@@ -126,7 +126,7 @@ class SparqlGenerator {
                 "        bind(<<?s ?key ?val>> as ?vp) .\n" +
                 "        filter(isLiteral(?val)) .\n" +
                 "        filter(datatype(?val) != <LI>) .\n" +
-                "        filter(?key != <LABEL>) .\n" +
+                "        filter(?key != <TYPE>) .\n" +
                 "    } union {\n" +
                 "        bind(<<?s ?key ?order>> as ?vp) .\n" +
                 "        filter(isLiteral(?order)) .\n" +
@@ -148,7 +148,7 @@ class SparqlGenerator {
                 "select ?edge ?label ?fromLabel ?toLabel where {\n" +
                      VALUES + 
                      DIRECTION +
-                "    ?edge <LABEL> ?label .\n" +
+                "    ?edge <TYPE> ?label .\n" +
                 "    filter(!isURI(?edge)) .\n" +
                 "}";
         
@@ -158,11 +158,11 @@ class SparqlGenerator {
          */
         String FORWARD =
                 "    bind(<<?src ?id ?to>> as ?edge) .\n" +
-                "    filter(?id != <LABEL>) .\n" +
+                "    filter(?id != <TYPE>) .\n" +
                 "    filter(isURI(?src) && isURI(?to)) .\n" +
                 "    optional {\n" +
-                "        ?src <LABEL> ?fromLabel .\n" +
-                "        ?to <LABEL> ?toLabel .\n" +
+                "        ?src <TYPE> ?fromLabel .\n" +
+                "        ?to <TYPE> ?toLabel .\n" +
                 "    }\n";
         
         /**
@@ -171,11 +171,11 @@ class SparqlGenerator {
          */
         String REVERSE =
                 "    bind(<<?from ?id ?src>> as ?edge) .\n" +
-                "    filter(?id != <LABEL>) .\n" +
+                "    filter(?id != <TYPE>) .\n" +
                 "    filter(isURI(?src) && isURI(?from)) .\n" +
                 "    optional {\n" +
-                "        ?src <LABEL> ?toLabel .\n" +
-                "        ?from <LABEL> ?fromLabel .\n" +
+                "        ?src <TYPE> ?toLabel .\n" +
+                "        ?from <TYPE> ?fromLabel .\n" +
                 "    }\n";
         
         /**
@@ -256,6 +256,7 @@ class SparqlGenerator {
                 "    } union {\n" +
                          // edges
                 "        bind(<< ?from ?id ?to >> as ?edge) .\n" +
+                "        filter(?id != <TYPE>) .\n" +
                 "        bind(<< ?edge ?p ?o >> as ?sid) .\n" +
                 "        ?sid ?action ?time .\n" +
                 "        filter(?action in (<ADDED>,<REMOVED>)) .\n" +
@@ -320,11 +321,11 @@ class SparqlGenerator {
                 "        bind(<<?from ?eid ?to>> as ?edge) .\n" +
                 "        filter(isURI(?from) && isURI(?to)) .\n" +
                 "        ?edge ?key ?val .\n" +
-                "        filter(?key not in (<LABEL>,<VALUE>,<ADDED>,<REMOVED>)) .\n" +
+                "        filter(?key not in (<TYPE>,<VALUE>,<ADDED>,<REMOVED>)) .\n" +
                 "        optional {\n" +
-                "            ?edge <LABEL> ?label .\n" +
-                "            ?from <LABEL> ?fromLabel .\n" +
-                "            ?to <LABEL> ?toLabel .\n" +
+                "            ?edge <TYPE> ?label .\n" +
+                "            ?from <TYPE> ?fromLabel .\n" +
+                "            ?to <TYPE> ?toLabel .\n" +
                 "        }" +
                 "    } union {\n" +
                          /*
@@ -335,16 +336,16 @@ class SparqlGenerator {
                 "        filter(isLiteral(?vpVal)) .\n" +
                 "        filter(!isURI(?vp)) .\n" +
                 "        ?vp ?key ?val .\n" +
-                "        filter(?key not in (<LABEL>,<VALUE>,<ADDED>,<REMOVED>)) .\n" +
-                "        optional { ?vertex <LABEL> ?label . }\n" +
+                "        filter(?key not in (<TYPE>,<VALUE>,<ADDED>,<REMOVED>)) .\n" +
+                "        optional { ?vertex <TYPE> ?label . }\n" +
                 "    } union {\n" +
                          /*
                           * Vertex property (Cardinality.set/single)
                           */
                 "        bind(<<?vertex ?vpKey ?val>> as ?vp) .\n" +
                 "        filter(isURI(?vertex)) .\n" +
-                "        filter(?vpKey not in (<LABEL>,<VALUE>,<ADDED>,<REMOVED>)) .\n" +
-                "        optional { ?vertex <LABEL> ?label . }\n" +
+                "        filter(?vpKey not in (<TYPE>,<VALUE>,<ADDED>,<REMOVED>)) .\n" +
+                "        optional { ?vertex <TYPE> ?label . }\n" +
                 "    } union {\n" +
                          /*
                           * Vertex property (Cardinality.list)
@@ -353,9 +354,9 @@ class SparqlGenerator {
                 "        filter(isURI(?vertex)) .\n" +
                 "        filter(isLiteral(?order)) .\n" +
                 "        filter(datatype(?order) = <LI>) .\n" +
-                "        filter(?vpKey not in (<LABEL>,<VALUE>,<ADDED>,<REMOVED>)) .\n" +
+                "        filter(?vpKey not in (<TYPE>,<VALUE>,<ADDED>,<REMOVED>)) .\n" +
                 "        ?vp <VALUE> ?val.\n" +
-                "        optional { ?vertex <LABEL> ?label . }\n" +
+                "        optional { ?vertex <TYPE> ?label . }\n" +
                 "    }\n" +
                 "}";
          
@@ -396,13 +397,13 @@ class SparqlGenerator {
      * {@link BlazeValueFactory}.
      */
     SparqlGenerator(final BlazeValueFactory vf) {
-        final String label = vf.label().stringValue();
+        final String type = vf.type().stringValue();
         final String value = vf.value().stringValue();
         final String li = vf.liDatatype().stringValue();
         final String added = vf.historyAdded().stringValue();
         final String removed = vf.historyRemoved().stringValue();
         final Function<String, String> f = template -> {
-            return template.replace("LABEL", label)
+            return template.replace("TYPE", type)
                            .replace("VALUE", value)
                            .replace("LI", li)
                            .replace("ADDED", added)

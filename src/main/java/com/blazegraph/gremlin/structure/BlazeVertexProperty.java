@@ -227,7 +227,7 @@ public class BlazeVertexProperty<V>
      */
     @Override
     public URI rdfLabel() {
-        return graph().valueFactory().elementURI(label()); 
+        return graph().valueFactory().typeURI(label()); 
     }
     
 
