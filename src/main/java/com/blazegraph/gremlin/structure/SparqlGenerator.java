@@ -515,7 +515,7 @@ class SparqlGenerator {
      * @see {@link Templates#EDGES_FROM_VERTEX}
      */
     String edgesFromVertex(final BlazeVertex src, final Direction dir,
-            final List<Literal> edgeLabels) {
+            final List<URI> edgeLabels) {
         final URI id = src.rdfId();
         final StringBuilder vc = buildValuesClause(
                 new StringBuilder(), "?src", asList(id));
