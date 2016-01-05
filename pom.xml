@@ -11,8 +11,9 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <jetty.version>9.2.3.v20140905</jetty.version>
-    <tp3.version>3.1.1-SNAPSHOT</tp3.version>
+    <tp3.version>3.1.0-incubating</tp3.version>
 <!--
+    <tp3.version>3.1.1-SNAPSHOT</tp3.version>
     <blaze.version>1.6.0-20151019</blaze.version>
 -->
     <blaze.version>1.6.1-master-SNAPSHOT</blaze.version>
