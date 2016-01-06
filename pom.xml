@@ -136,11 +136,6 @@ Copyright 2010 by TalkingTrends (Amsterdam, The Netherlands)
             <artifactId>tinkergraph-gremlin</artifactId>
             <version>${tp3.version}</version>
         </dependency>
-        <dependency>
-            <groupId>org.apache.tinkerpop</groupId>
-            <artifactId>neo4j-gremlin</artifactId>
-            <version>${tp3.version}</version>
-        </dependency>
         <!-- TESTING -->
         <dependency>
             <groupId>org.apache.tinkerpop</groupId>
