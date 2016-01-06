@@ -22,6 +22,8 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 package com.blazegraph.gremlin.embedded;
 
+import static org.junit.Assert.fail;
+
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -410,6 +412,13 @@ public class BlazeGraphEmbedded extends BlazeGraph {
         @Override
         protected void doClose() {
             super.doClose();
+            closeInternal();
+        }
+        
+        /**
+         * Release the unisolated connection.
+         */
+        private void closeInternal() {
             final BigdataSailRepositoryConnection cxn = tlTx.get();
             if (cxn != null) {
                 close(cxn);
@@ -684,8 +693,20 @@ public class BlazeGraphEmbedded extends BlazeGraph {
     public synchronized void close() {
         if (closed)
             return;
-        
-        tx.close();
+
+        try {
+            /*
+             * Try with the auto-close behavior first.
+             */
+            tx.close();
+        } catch (Exception ex) {
+            /*
+             * But if auto-close is set to Transaction.CLOSE_BEHAVIOR.MANUAL
+             * then just release the connection manually.
+             */
+            tx.closeInternal();
+        }
+
         Code.wrapThrow(() -> repo.shutDown());
         closed = true;
     }

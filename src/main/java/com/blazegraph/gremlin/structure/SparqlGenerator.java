@@ -133,6 +133,7 @@ class SparqlGenerator {
                 "        filter(isLiteral(?order)) .\n" +
                 "        filter(datatype(?order) = <LI>) .\n" +
                 "        ?vp <VALUE> ?val .\n" +
+                "        hint:Prior hint:runLast true .\n" +
                 "    }\n" +
                 "} order by ?order";
         
@@ -149,11 +150,12 @@ class SparqlGenerator {
                 "    bind(<<?src ?id ?to>> as ?edge) .\n" +
                 "    filter(?id != <TYPE>) .\n" +
                 "    filter(isURI(?src) && isURI(?to)) .\n" +
-                "    optional {\n" +
+//                "    optional {\n" +
                 "        ?edge <TYPE> ?label .\n" +
                 "        ?src <TYPE> ?fromLabel .\n" +
                 "        ?to <TYPE> ?toLabel .\n" +
-                "    }\n";
+//                "    }\n";
+                "";
         
         /**
          * @see {@link BlazeGraph#edgesFromVertex(BlazeVertex, Direction, String...)}
@@ -163,11 +165,12 @@ class SparqlGenerator {
                 "    bind(<<?from ?id ?src>> as ?edge) .\n" +
                 "    filter(?id != <TYPE>) .\n" +
                 "    filter(isURI(?src) && isURI(?from)) .\n" +
-                "    optional {\n" +
+//                "    optional {\n" +
                 "        ?edge <TYPE> ?label .\n" +
                 "        ?src <TYPE> ?toLabel .\n" +
                 "        ?from <TYPE> ?fromLabel .\n" +
-                "    }\n";
+//                "    }\n";
+                "";
         
         /**
          * @see {@link BlazeGraph#edgesFromVertex(BlazeVertex, Direction, String...)}
