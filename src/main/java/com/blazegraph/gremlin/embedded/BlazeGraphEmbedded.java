@@ -22,8 +22,6 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 package com.blazegraph.gremlin.embedded;
 
-import static org.junit.Assert.fail;
-
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -52,7 +50,6 @@ import com.bigdata.bop.fed.QueryEngineFactory;
 import com.bigdata.journal.IIndexManager;
 import com.bigdata.rdf.changesets.ChangeAction;
 import com.bigdata.rdf.changesets.ChangeRecord;
-import com.bigdata.rdf.changesets.IChangeLog;
 import com.bigdata.rdf.changesets.IChangeRecord;
 import com.bigdata.rdf.model.BigdataStatement;
 import com.bigdata.rdf.model.BigdataValueFactory;
