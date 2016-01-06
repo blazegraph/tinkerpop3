@@ -28,6 +28,7 @@ import org.apache.tinkerpop.gremlin.structure.Property;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.apache.tinkerpop.gremlin.structure.util.empty.EmptyVertexProperty;
 import org.openrdf.model.Literal;
+import org.openrdf.model.URI;
 
 import com.bigdata.rdf.model.BigdataBNode;
 import com.blazegraph.gremlin.util.CloseableIterator;
@@ -54,7 +55,7 @@ public class EmptyBlazeVertexProperty<V> extends BlazeVertexProperty<V> {
     }
 
     @Override
-    public Literal rdfLabel() {
+    public URI rdfLabel() {
         throw Property.Exceptions.propertyDoesNotExist();
     }
 

@@ -29,6 +29,7 @@ import java.util.Set;
 import org.apache.tinkerpop.gremlin.structure.Element;
 import org.apache.tinkerpop.gremlin.structure.Property;
 import org.openrdf.model.Literal;
+import org.openrdf.model.URI;
 
 import com.bigdata.rdf.model.BigdataResource;
 import com.blazegraph.gremlin.util.CloseableIterator;
@@ -56,7 +57,7 @@ public interface BlazeElement extends Element {
     /**
      * Return RDF literal for element label.
      */
-    Literal rdfLabel();
+    URI rdfLabel();
     
     /**
      * Strengthen return type to {@link CloseableIterator}. You MUST close this

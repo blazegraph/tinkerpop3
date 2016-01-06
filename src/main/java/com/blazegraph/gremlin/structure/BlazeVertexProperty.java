@@ -30,6 +30,7 @@ import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.apache.tinkerpop.gremlin.structure.util.ElementHelper;
 import org.apache.tinkerpop.gremlin.structure.util.StringFactory;
 import org.openrdf.model.Literal;
+import org.openrdf.model.URI;
 
 import com.bigdata.rdf.model.BigdataBNode;
 import com.blazegraph.gremlin.util.CloseableIterator;
@@ -225,8 +226,8 @@ public class BlazeVertexProperty<V>
      * {@link BlazeElement}).
      */
     @Override
-    public Literal rdfLabel() {
-        return graph().valueFactory().toLiteral(label()); 
+    public URI rdfLabel() {
+        return graph().valueFactory().typeURI(label()); 
     }
     
 
