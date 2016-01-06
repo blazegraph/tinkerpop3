@@ -762,9 +762,9 @@ public abstract class BlazeGraph implements Graph {
      */
     CloseableIterator<Edge> edgesFromVertex(final BlazeVertex src, 
             final Direction dir, final String... edgeLabels) {
-        final List<Literal> lits = 
-                Stream.of(edgeLabels).map(vf::toLiteral).collect(toList());
-        final String queryStr = sparql.edgesFromVertex(src, dir, lits);
+        final List<URI> uris = 
+                Stream.of(edgeLabels).map(vf::typeURI).collect(toList());
+        final String queryStr = sparql.edgesFromVertex(src, dir, uris);
         
         final Stream<Edge> stream = _select(queryStr, nextQueryId())
                 .map(transforms.edge);
@@ -1293,7 +1293,7 @@ public abstract class BlazeGraph implements Graph {
             final BigdataBNode s = (BigdataBNode) bs.getValue("edge");
             final BigdataStatement stmt = s.getStatement();
 //            final Literal label = (Literal) bs.getValue("label");
-            final BigdataURI label = (BigdataURI) bs.getValue("label");;
+            final BigdataURI label = (BigdataURI) bs.getValue("label");
             final BigdataURI fromURI = (BigdataURI) stmt.getSubject();
 //            final Literal fromLabel = (Literal) bs.getValue("fromLabel");
             final BigdataURI fromLabel = (BigdataURI) bs.getValue("fromLabel");;
@@ -1511,6 +1511,7 @@ public abstract class BlazeGraph implements Graph {
         private final 
         Function<BindingSet, Optional<BlazeGraphEdit>> history = bs -> {
             
+            log.debug(() -> bs);
             final BigdataBNode sid = (BigdataBNode) bs.getValue("sid");
             final BigdataStatement stmt = sid.getStatement();
             final URI a = (URI) bs.getValue("action");
