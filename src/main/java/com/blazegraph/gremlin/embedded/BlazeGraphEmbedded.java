@@ -50,7 +50,6 @@ import com.bigdata.bop.fed.QueryEngineFactory;
 import com.bigdata.journal.IIndexManager;
 import com.bigdata.rdf.changesets.ChangeAction;
 import com.bigdata.rdf.changesets.ChangeRecord;
-import com.bigdata.rdf.changesets.IChangeLog;
 import com.bigdata.rdf.changesets.IChangeRecord;
 import com.bigdata.rdf.model.BigdataStatement;
 import com.bigdata.rdf.model.BigdataValueFactory;
@@ -410,6 +409,13 @@ public class BlazeGraphEmbedded extends BlazeGraph {
         @Override
         protected void doClose() {
             super.doClose();
+            closeInternal();
+        }
+        
+        /**
+         * Release the unisolated connection.
+         */
+        private void closeInternal() {
             final BigdataSailRepositoryConnection cxn = tlTx.get();
             if (cxn != null) {
                 close(cxn);
@@ -684,8 +690,20 @@ public class BlazeGraphEmbedded extends BlazeGraph {
     public synchronized void close() {
         if (closed)
             return;
-        
-        tx.close();
+
+        try {
+            /*
+             * Try with the auto-close behavior first.
+             */
+            tx.close();
+        } catch (Exception ex) {
+            /*
+             * But if auto-close is set to Transaction.CLOSE_BEHAVIOR.MANUAL
+             * then just release the connection manually.
+             */
+            tx.closeInternal();
+        }
+
         Code.wrapThrow(() -> repo.shutDown());
         closed = true;
     }

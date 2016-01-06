@@ -121,17 +121,19 @@ class SparqlGenerator {
          */
         String VERTEX_PROPERTIES =
                 "select ?vp ?val where {\n" +
-                     VALUES + 
                 "    {\n" +
+                         VALUES + 
                 "        bind(<<?s ?key ?val>> as ?vp) .\n" +
                 "        filter(isLiteral(?val)) .\n" +
                 "        filter(datatype(?val) != <LI>) .\n" +
                 "        filter(?key != <TYPE>) .\n" +
                 "    } union {\n" +
+                         VALUES + 
                 "        bind(<<?s ?key ?order>> as ?vp) .\n" +
                 "        filter(isLiteral(?order)) .\n" +
                 "        filter(datatype(?order) = <LI>) .\n" +
                 "        ?vp <VALUE> ?val .\n" +
+                "        hint:Prior hint:runLast true .\n" +
                 "    }\n" +
                 "} order by ?order";
         
@@ -144,26 +146,16 @@ class SparqlGenerator {
          * @see {@link BlazeGraph#edgesFromVertex(BlazeVertex, Direction, String...)}
          * @see {@link BlazeVertex#edges(Direction, String...)}
          */
-        String EDGES_FROM_VERTEX =
-                "select ?edge ?label ?fromLabel ?toLabel where {\n" +
-                     VALUES + 
-                     DIRECTION +
-                "    ?edge <TYPE> ?label .\n" +
-                "    filter(!isURI(?edge)) .\n" +
-                "}";
-        
-        /**
-         * @see {@link BlazeGraph#edgesFromVertex(BlazeVertex, Direction, String...)}
-         * @see {@link BlazeVertex#edges(Direction, String...)}
-         */
         String FORWARD =
                 "    bind(<<?src ?id ?to>> as ?edge) .\n" +
                 "    filter(?id != <TYPE>) .\n" +
                 "    filter(isURI(?src) && isURI(?to)) .\n" +
-                "    optional {\n" +
+//                "    optional {\n" +
+                "        ?edge <TYPE> ?label .\n" +
                 "        ?src <TYPE> ?fromLabel .\n" +
                 "        ?to <TYPE> ?toLabel .\n" +
-                "    }\n";
+//                "    }\n";
+                "";
         
         /**
          * @see {@link BlazeGraph#edgesFromVertex(BlazeVertex, Direction, String...)}
@@ -173,21 +165,37 @@ class SparqlGenerator {
                 "    bind(<<?from ?id ?src>> as ?edge) .\n" +
                 "    filter(?id != <TYPE>) .\n" +
                 "    filter(isURI(?src) && isURI(?from)) .\n" +
-                "    optional {\n" +
+//                "    optional {\n" +
+                "        ?edge <TYPE> ?label .\n" +
                 "        ?src <TYPE> ?toLabel .\n" +
                 "        ?from <TYPE> ?fromLabel .\n" +
-                "    }\n";
+//                "    }\n";
+                "";
         
         /**
          * @see {@link BlazeGraph#edgesFromVertex(BlazeVertex, Direction, String...)}
          * @see {@link BlazeVertex#edges(Direction, String...)}
          */
-        String BOTH =
+        String EDGES_FROM_VERTEX =
+                "select ?edge ?label ?fromLabel ?toLabel where {\n" +
+                     VALUES + 
+                     DIRECTION +
+                "}";
+        
+        /**
+         * @see {@link BlazeGraph#edgesFromVertex(BlazeVertex, Direction, String...)}
+         * @see {@link BlazeVertex#edges(Direction, String...)}
+         */
+        String EDGES_FROM_VERTEX_BOTH =
+                "select ?edge ?label ?fromLabel ?toLabel where {\n" +
                 "    {\n"+
+                         VALUES + 
                          FORWARD.replace("    ", "        ") +
                 "    } union {\n" +
+                         VALUES + 
                          REVERSE.replace("    ", "        ") +
-                "    }\n";
+                "    }\n" +
+                "}";
         
         /**
          * Used by Cardinality.single to remove all old vertex properties
@@ -246,19 +254,22 @@ class SparqlGenerator {
         String HISTORY =
                 "prefix hint: <"+QueryHints.NAMESPACE+">\n" +
                 "select ?sid ?action ?time where {\n"+
-                     VALUES + 
                 "    {\n" +
+                         VALUES + 
                          // vertices
                 "        bind(<< ?id ?p ?o >> as ?sid) .\n" +
                 "        hint:Prior hint:history true .\n" +
                 "        ?sid ?action ?time .\n" +
+                "        hint:Prior hint:runLast true .\n" +
                 "        filter(?action in (<ADDED>,<REMOVED>)) .\n" +
                 "    } union {\n" +
+                         VALUES + 
                          // edges
                 "        bind(<< ?from ?id ?to >> as ?edge) .\n" +
                 "        filter(?id != <TYPE>) .\n" +
                 "        bind(<< ?edge ?p ?o >> as ?sid) .\n" +
                 "        ?sid ?action ?time .\n" +
+                "        hint:Prior hint:runLast true .\n" +
                 "        filter(?action in (<ADDED>,<REMOVED>)) .\n" +
                 "    }\n" +
                 "    hint:Query hint:history true .\n" +
@@ -273,14 +284,15 @@ class SparqlGenerator {
                 "    ?s ?p ?id .\n" +
                 "    ?sid ?pp ?oo .\n" +
                 "} where {\n" +
-                     VALUES +
                 "    {\n" +
+                         VALUES +
                 "        bind(<< ?id ?p ?o >> as ?sid) .\n" +
                 "        optional {\n" +
                 "            ?sid ?pp ?oo .\n" +
                 "            filter(?pp not in(<ADDED>,<REMOVED>)) .\n" +
                 "        }\n" +
                 "    } union {\n" +
+                         VALUES +
                 "        bind(<< ?s ?p ?id >> as ?sid) .\n" +
                 "        optional {\n" +
                 "            ?sid ?pp ?oo .\n" +
@@ -376,11 +388,11 @@ class SparqlGenerator {
     
     private final String EDGES_FROM_VERTEX;
     
+    private final String EDGES_FROM_VERTEX_BOTH;
+    
     private final String FORWARD;
     
     private final String REVERSE;
-    
-    private final String BOTH;
     
     private final String CLEAN_VERTEX_PROPS;
     
@@ -417,9 +429,9 @@ class SparqlGenerator {
         this.PROPERTIES = f.apply(Templates.PROPERTIES);
         this.VERTEX_PROPERTIES = f.apply(Templates.VERTEX_PROPERTIES);
         this.EDGES_FROM_VERTEX = f.apply(Templates.EDGES_FROM_VERTEX);
+        this.EDGES_FROM_VERTEX_BOTH = f.apply(Templates.EDGES_FROM_VERTEX_BOTH);
         this.FORWARD = f.apply(Templates.FORWARD);
         this.REVERSE = f.apply(Templates.REVERSE);
-        this.BOTH = f.apply(Templates.BOTH);
         this.CLEAN_VERTEX_PROPS = f.apply(Templates.CLEAN_VERTEX_PROPS);
         this.HISTORY = f.apply(Templates.HISTORY);
         this.REMOVE_VERTEX = f.apply(Templates.REMOVE_VERTEX);
@@ -506,18 +518,21 @@ class SparqlGenerator {
      * @see {@link Templates#EDGES_FROM_VERTEX}
      */
     String edgesFromVertex(final BlazeVertex src, final Direction dir,
-            final List<Literal> edgeLabels) {
+            final List<URI> edgeLabels) {
         final URI id = src.rdfId();
         final StringBuilder vc = buildValuesClause(
                 new StringBuilder(), "?src", asList(id));
         if (!edgeLabels.isEmpty()) {
             buildValuesClause(vc, "?label", edgeLabels);
         }
-        final String DIRECTION = dir == Direction.OUT ? FORWARD 
-                                    : dir == Direction.IN ? REVERSE : BOTH;
-        final String queryStr = 
-                EDGES_FROM_VERTEX.replace(Templates.VALUES, vc.toString())
-                                 .replace(Templates.DIRECTION, DIRECTION);
+        final String queryStr;
+        if (dir == Direction.BOTH) {
+            queryStr = EDGES_FROM_VERTEX_BOTH.replace(Templates.VALUES, vc.toString());
+        } else {
+            final String DIRECTION = dir == Direction.OUT ? FORWARD : REVERSE;
+            queryStr = EDGES_FROM_VERTEX.replace(Templates.VALUES, vc.toString())
+                                        .replace(Templates.DIRECTION, DIRECTION);
+        }
         return queryStr;
     }
     
