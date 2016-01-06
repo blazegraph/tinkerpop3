@@ -1,5 +1,5 @@
 /**
-Copyright (C) SYSTAP, LLC 2006-2015.  All rights reserved.
+Copyright (C) SYSTAP, LLC 2006-2016.  All rights reserved.
 
 Contact:
      SYSTAP, LLC
@@ -67,6 +67,8 @@ import org.junit.runner.RunWith;
 import org.junit.runners.model.InitializationError;
 import org.junit.runners.model.RunnerBuilder;
 
+import com.blazegraph.gremlin.util.LambdaLogger;
+
 /**
  * A modified version of StructureStandardSuite that either does not run or
  * fixes certain tests that are simply incompatible with the Blaze engine.
@@ -76,6 +78,7 @@ import org.junit.runners.model.RunnerBuilder;
  */
 public class StructureStandardSuite extends AbstractGremlinSuite {
 
+    private static final transient LambdaLogger log = LambdaLogger.getLogger(StructureStandardSuite.class);
     
     /**
      * This list of tests in the suite that will be executed.  Gremlin developers should add to this list
@@ -149,6 +152,10 @@ public class StructureStandardSuite extends AbstractGremlinSuite {
 //        
 //    }
     
+    public static class ModifiedTest extends AbstractGremlinTest {
+        
+    }
+    
     public static class ModifiedDetachedGraphTest extends DetachedGraphTest {
 
         /**
@@ -162,14 +169,6 @@ public class StructureStandardSuite extends AbstractGremlinSuite {
         public void testAttachableCreateMethod() {
             super.testAttachableCreateMethod();
         }
-        
-//        /*
-//         * Works but takes too long
-//         */
-//        @Override
-//        public void testAttachableGetMethod() {
-////            super.testAttachableGetMethodT();
-//        }
         
     }
     
