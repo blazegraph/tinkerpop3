@@ -213,6 +213,11 @@ Copyright 2010 by TalkingTrends (Amsterdam, The Netherlands)
       <id>apache.snapshots</id>
       <url>http://repository.apache.org/snapshots/</url>
     </repository>
+    <!-- Need for testing Blazegraph releases -->
+    <repository>
+      <id>maven.snapshots</id>
+      <url>https://oss.sonatype.org/content/repositories/snapshots/</url>
+    </repository>
   </repositories>
   <dependencies>
     <dependency>
