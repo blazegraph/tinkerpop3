@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-Copyright (C) SYSTAP, LLC 2006-2015.  All rights reserved.
+Copyright (C) SYSTAP, LLC DBA Blazegraph 2006-2016.  All rights reserved.
 
 Contact:
-     SYSTAP, LLC
+     SYSTAP, LLC DBA Blazegraph
      2501 Calvert ST NW #106
      Washington, DC 20008
      licenses@systap.com
@@ -22,8 +22,8 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 
 Copyright 2010 by TalkingTrends (Amsterdam, The Netherlands)
---><project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <groupId>com.blazegraph</groupId>
   <artifactId>blazegraph-gremlin</artifactId>
@@ -32,36 +32,159 @@ Copyright 2010 by TalkingTrends (Amsterdam, The Netherlands)
   <name>blazegraph-gremlin</name>
   <url>https://www.blazegraph.com/</url>
   <organization>
-     <name>SYSTAP, LLC</name>
-     <url>http://www.systap.com/</url>
+    <name>SYSTAP, LLC DBA Blazegraph</name>
+    <url>http://www.systap.com/</url>
   </organization>
   <inceptionYear>2015</inceptionYear>
   <licenses>
-     <license>
-         <name>GNU General Public License Version 2 (GPLv2)</name>
-         <url>http://www.gnu.org/licenses/gpl-2.0.html</url>
-     </license>
+    <license>
+      <name>GNU General Public License Version 2 (GPLv2)</name>
+      <url>http://www.gnu.org/licenses/gpl-2.0.html</url>
+    </license>
   </licenses>
+  <mailingLists>
+    <mailingList>
+      <name>Developer</name>
+      <subscribe>https://lists.sourceforge.net/lists/listinfo/bigdata-developers</subscribe>
+      <unsubscribe>https://lists.sourceforge.net/lists/listinfo/bigdata-developers</unsubscribe>
+      <archive>https://sourceforge.net/p/bigdata/mailman/bigdata-developers/</archive>
+    </mailingList>
+  </mailingLists>
   <issueManagement>
     <system>JIRA</system>
     <url>https://jira.blazegraph.com/</url>
   </issueManagement>
   <scm>
-     <connection>scm:git:https://github.com/blazegraph/tinkerpop3.git</connection>
+    <connection>scm:git:https://github.com/blazegraph/tinkerpop3.git</connection>
     <developerConnection>scm:git:git@github.com:blazegraph/tinkerpop3.git</developerConnection>
-     <url>https://github.com/blazegraph/tinkerpop3.git</url>
+    <url>https://github.com/blazegraph/tinkerpop3.git</url>
   </scm>
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <jetty.version>9.2.3.v20140905</jetty.version>
     <tp3.version>3.1.0-incubating</tp3.version>
-    <blaze.version>2.0.0-RC2-SNAPSHOT</blaze.version>
+    <blaze.version>2.0.0-SNAPSHOT</blaze.version>
     <apache.commons_fileupload.version>1.3.1</apache.commons_fileupload.version>
     <zookeeper.version>3.4.6</zookeeper.version>
   </properties>
+  <developers>
+    <developer>
+      <name>Mike Personick</name>
+      <email>mike@blazegraph.com</email>
+      <organization>SYSTAP, LLC DBA Blazegraph DBA Blazegraph</organization>
+      <organizationUrl>http://www.blazegraph.com</organizationUrl>
+    </developer>
+    <developer>
+      <name>Bryan Thompson</name>
+      <email>bryan@blazegraph.com</email>
+      <organization>SYSTAP, LLC DBA Blazegraph DBA Blazegraph</organization>
+      <organizationUrl>http://www.blazegraph.com</organizationUrl>
+    </developer>
+    <developer>
+      <name>Brad Bebee</name>
+      <email>beebs@blazegraph.com</email>
+      <organization>SYSTAP, LLC DBA Blazegraph DBA Blazegraph</organization>
+      <organizationUrl>http://www.blazegraph.com</organizationUrl>
+    </developer>
+  </developers>
+  <profiles>
+    <profile>
+      <id>maven-central</id>
+      <!-- 
+                Plugins for Maven Central Deployment 
+                See:  http://central.sonatype.org/pages/apache-maven.html 
+         -->
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-gpg-plugin</artifactId>
+            <version>1.6</version>
+            <executions>
+              <execution>
+                <id>sign-artifacts</id>
+                <phase>verify</phase>
+                <goals>
+                  <goal>sign</goal>
+                </goals>
+                <configuration>
+                  <keyname>${gpg.keyname}</keyname>
+                  <passphraseServerId>${gpg.keyname}</passphraseServerId>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.sonatype.plugins</groupId>
+            <artifactId>nexus-staging-maven-plugin</artifactId>
+            <version>1.6.3</version>
+            <extensions>true</extensions>
+            <configuration>
+              <serverId>ossrh</serverId>
+              <nexusUrl>https://oss.sonatype.org/</nexusUrl>
+              <autoReleaseAfterClose>true</autoReleaseAfterClose>
+            </configuration>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-source-plugin</artifactId>
+            <version>2.2.1</version>
+            <executions>
+              <execution>
+                <id>attach-sources</id>
+                <goals>
+                  <goal>jar-no-fork</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-javadoc-plugin</artifactId>
+            <version>2.9.1</version>
+            <executions>
+              <execution>
+                <id>attach-javadocs</id>
+                <goals>
+                  <goal>jar</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+      <distributionManagement>
+        <snapshotRepository>
+          <id>ossrh</id>
+          <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+        </snapshotRepository>
+      </distributionManagement>
+    </profile>
+    <profile>
+      <id>local-deploy</id>
+      <distributionManagement>
+        <snapshotRepository>
+          <id>bigdata.snapshots</id>
+          <name>bigdata(R) snapshots</name>
+          <url>scpexe://www.systap.com/srv/www/htdocs/systap.com/maven/snapshots</url>
+          <uniqueVersion>true</uniqueVersion>
+        </snapshotRepository>
+      </distributionManagement>
+      <repositories>
+        <repository>
+          <id>bigdata.releases</id>
+          <url>http://www.systap.com/maven/releases/</url>
+        </repository>
+        <repository>
+          <id>bigdata.snapshots</id>
+          <url>http://www.systap.com/maven/snapshots/</url>
+        </repository>
+      </repositories>
+    </profile>
+  </profiles>
   <build>
     <plugins>
-     <plugin>
+      <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
         <version>3.1</version>
@@ -71,51 +194,25 @@ Copyright 2010 by TalkingTrends (Amsterdam, The Netherlands)
         </configuration>
       </plugin>
       <plugin>
-         <groupId>org.apache.maven.plugins</groupId>
-         <artifactId>maven-deploy-plugin</artifactId>
-         <version>2.8.1</version>
-       </plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-deploy-plugin</artifactId>
+        <version>2.8.1</version>
+      </plugin>
     </plugins>
     <extensions>
       <extension>
         <groupId>org.apache.maven.wagon</groupId>
-         <artifactId>wagon-ssh-external</artifactId>
-         <version>1.0-beta-6</version>
+        <artifactId>wagon-ssh-external</artifactId>
+        <version>1.0-beta-6</version>
       </extension>
     </extensions>
   </build>
-  <distributionManagement>
-        <repository>
-            <id>bigdata.releases</id>
-            <name>bigdata(R) releases</name>
-            <url>scpexe://www.systap.com/srv/www/htdocs/systap.com/maven/releases</url>
-        </repository>
-        <snapshotRepository>
-            <id>bigdata.snapshots</id>
-            <name>bigdata(R) snapshots</name>
-            <url>scpexe://www.systap.com/srv/www/htdocs/systap.com/maven/snapshots</url>
-            <uniqueVersion>true</uniqueVersion>
-        </snapshotRepository>
-  </distributionManagement>
   <repositories>
-    <repository>
-      <id>bigdata.releases</id>
-      <url>http://www.systap.com/maven/releases/</url>
-    </repository>
-    <repository>
-      <id>bigdata.snapshots</id>
-      <url>http://www.systap.com/maven/snapshots/</url>
-    </repository>
+    <!-- Required until Tinkerpop 3.x is officially released -->
     <repository>
       <id>apache.snapshots</id>
       <url>http://repository.apache.org/snapshots/</url>
     </repository>
-    <!--
-    <repository>
-      <id>jetty.releases</id>
-      <url>https://oss.sonatype.org/content/groups/jetty/</url>
-    </repository>
-    -->
   </repositories>
   <dependencies>
     <dependency>
@@ -124,37 +221,35 @@ Copyright 2010 by TalkingTrends (Amsterdam, The Netherlands)
       <version>3.8.1</version>
       <scope>test</scope>
     </dependency>
-
     <!-- TP3 dependencies -->
-        <dependency>
-            <groupId>org.apache.tinkerpop</groupId>
-            <artifactId>gremlin-core</artifactId>
-            <version>${tp3.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.tinkerpop</groupId>
-            <artifactId>gremlin-groovy</artifactId>
-            <version>${tp3.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.tinkerpop</groupId>
-            <artifactId>tinkergraph-gremlin</artifactId>
-            <version>${tp3.version}</version>
-        </dependency>
-        <!-- TESTING -->
-        <dependency>
-            <groupId>org.apache.tinkerpop</groupId>
-            <artifactId>gremlin-test</artifactId>
-            <version>${tp3.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.tinkerpop</groupId>
-            <artifactId>gremlin-groovy-test</artifactId>
-            <version>${tp3.version}</version>
-            <scope>test</scope>
-        </dependency>
-
+    <dependency>
+      <groupId>org.apache.tinkerpop</groupId>
+      <artifactId>gremlin-core</artifactId>
+      <version>${tp3.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.tinkerpop</groupId>
+      <artifactId>gremlin-groovy</artifactId>
+      <version>${tp3.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.tinkerpop</groupId>
+      <artifactId>tinkergraph-gremlin</artifactId>
+      <version>${tp3.version}</version>
+    </dependency>
+    <!-- TESTING -->
+    <dependency>
+      <groupId>org.apache.tinkerpop</groupId>
+      <artifactId>gremlin-test</artifactId>
+      <version>${tp3.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.tinkerpop</groupId>
+      <artifactId>gremlin-groovy-test</artifactId>
+      <version>${tp3.version}</version>
+      <scope>test</scope>
+    </dependency>
     <!--  Blaze dependencies -->
     <dependency>
       <groupId>com.blazegraph</groupId>
@@ -238,39 +333,5 @@ Copyright 2010 by TalkingTrends (Amsterdam, The Netherlands)
       <version>${jetty.version}</version>
     </dependency>
     <!--  end Bigdata dependencies -->
-
-    <!--  Blaze Workbench dependencies -->
-    <dependency>
-	<groupId>org.apache.zookeeper</groupId>
-        <artifactId>zookeeper</artifactId>
-	<version>${zookeeper.version}</version>
-    </dependency>
-    <dependency>
-       <groupId>commons-fileupload</groupId>
-       <artifactId>commons-fileupload</artifactId>
-       <version>${apache.commons_fileupload.version}</version>
-    </dependency>
-    <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-proxy</artifactId>
-        <version>${jetty.version}</version>
-      </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-server</artifactId>
-      <version>${jetty.version}</version>
-    </dependency>
-    <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-webapp</artifactId>
-        <version>${jetty.version}</version>
-      </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-xml</artifactId>
-      <version>${jetty.version}</version>
-    </dependency>
-    <!--  end Blaze Workbench dependencies -->
-
   </dependencies>
 </project>
