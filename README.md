@@ -14,6 +14,17 @@ Some interesting features of the Blazegraph/TP3 implementation include:
 * Bulk Load API for fast setup of new graphs.
 * Support for MVCC concurrency model for high-concurrency read access.
 
+## Maven Central Dependency
+Blazegraph and the Tinkerpop3 implementation are available on Maven Central.
+
+```
+   <dependency>
+      <groupId>com.blazegraph</groupId>
+      <artifactId>blazegraph-gremlin</artifactId>
+      <version>1.0</version>
+   </dependency>
+```
+
 ## Getting Started
 
 To build blazegraph-gremlin:
@@ -50,7 +61,7 @@ You can then open a BlazeGraph instance by specifying the location you would lik
                       Affordable
           Web-Scale Computing for the Enterprise
           
-    Copyright SYSTAP, LLC 2006-2015.  All rights reserved.
+    Copyright SYSTAP, LLC DBA Blazegraph 2006-2016.  All rights reserved.
     ==>blazegraphembedded[vertices:0 edges:0]
 
 ## Blazegraph/TP3 Data Model
