@@ -220,12 +220,6 @@ Copyright 2010 by TalkingTrends (Amsterdam, The Netherlands)
     </repository>
   </repositories>
   <dependencies>
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>3.8.1</version>
-      <scope>test</scope>
-    </dependency>
     <!-- TP3 dependencies -->
     <dependency>
       <groupId>org.apache.tinkerpop</groupId>
@@ -276,18 +270,6 @@ Copyright 2010 by TalkingTrends (Amsterdam, The Netherlands)
       <artifactId>icu4j</artifactId>
       <version>4.8</version>
     </dependency>
-<!--
-    <dependency>
-      <groupId>it.unimi.dsi</groupId>
-      <artifactId>dsi-utils</artifactId>
-      <version>1.0.6-020610</version>
-    </dependency>
-    <dependency>
-      <groupId>it.unimi.dsi</groupId>
-      <artifactId>lgpl-utils</artifactId>
-      <version>1.0.7-270114</version>
-    </dependency>
--->
     <dependency>
       <groupId>it.unimi.dsi</groupId>
       <artifactId>fastutil</artifactId>
