@@ -73,7 +73,7 @@ abstract class AbstractBlazeElement implements BlazeElement {
     /**
      * Return element id. Tinkerpop3 interface method.
      * 
-     * @see {@link Element#id()}
+     * @see Element#id()
      */
     @Override
     public String id() {
@@ -83,7 +83,7 @@ abstract class AbstractBlazeElement implements BlazeElement {
     /**
      * Return element label. Tinkerpop3 interface method.
      * 
-     * @see {@link Element#label()}
+     * @see Element#label()
      */
     @Override
     public String label() {
@@ -93,7 +93,7 @@ abstract class AbstractBlazeElement implements BlazeElement {
     /**
      * Return the RDF representation of the label.
      * 
-     * @see {@link BlazeElement#rdfLabel()}
+     * @see BlazeElement#rdfLabel()
      */
     @Override
     public URI rdfLabel() {

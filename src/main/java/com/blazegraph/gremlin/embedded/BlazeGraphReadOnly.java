@@ -35,9 +35,10 @@ import com.blazegraph.gremlin.util.Code;
  * read-only views as you like, but we recommend you use a connection pool so as
  * not to overtax system resources. Applications should be written with the
  * one-writer many-readers paradigm front of mind.
- * <p/>
+ * <p>
  * Important: Make sure to close the read-only view as soon as you are done with
  * it.
+ * </p>
  *
  * @author mikepersonick
  */

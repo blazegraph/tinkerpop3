@@ -43,7 +43,9 @@ public interface Lambdas {
      * 
      * Usage:
      * Stream distinct Person objects by name:
-     * persons.stream().filter(distinctByKey(p -> p.getName());
+     * {@code
+     *    persons.stream().filter(distinctByKey(p -> p.getName());
+     * }
      * 
      * @return predicate (thread-safe)
      */

@@ -37,15 +37,15 @@ import com.blazegraph.gremlin.util.CloseableIterator;
 
 /**
  * Concrete vertex implementation for BlazeGraph.
- * <p/>
+ * <p>
  * Vertex existence is represented as one triples as follows:
- * <p/>
+ * </p>
  * <pre>
  *     :vertexId rdf:type :label .
  * </pre>
- * <p/>
+ * <p>
  * Vertex properties are represented as follows:
- * <p/>
+ * </p>
  * <pre>
  *     :vertexId :key "val" .
  * </pre>
@@ -81,8 +81,8 @@ public class BlazeVertex extends AbstractBlazeElement implements Vertex, BlazeEl
     /**
      * Strengthen return type to {@link BlazeVertexProperty}.
      * 
-     * @see {@link Vertex#property(String)}
-     * @see {@link BlazeVertex#properties(String...)}
+     * @see Vertex#property(String)
+     * @see BlazeVertex#properties(String...)
      */
     @Override
     public <V> BlazeVertexProperty<V> property(final String key) {
@@ -111,7 +111,7 @@ public class BlazeVertex extends AbstractBlazeElement implements Vertex, BlazeEl
     /**
      * Strengthen return type to {@link BlazeVertexProperty}.
      * 
-     * @see {@link BlazeGraph#vertexProperty(BlazeVertex, Cardinality, String, Object, Object...)}
+     * @see BlazeGraph#vertexProperty(BlazeVertex, Cardinality, String, Object, Object...)
      */
     @Override
     public <V> BlazeVertexProperty<V> property(final Cardinality cardinality, 
@@ -133,8 +133,8 @@ public class BlazeVertex extends AbstractBlazeElement implements Vertex, BlazeEl
     }
 
     /**
-     * @see {@link Vertex#addEdge(String, Vertex, Object...)}
-     * @see {@link BlazeGraph#addEdge(BlazeVertex, BlazeVertex, String, Object...)}
+     * @see Vertex#addEdge(String, Vertex, Object...)
+     * @see BlazeGraph#addEdge(BlazeVertex, BlazeVertex, String, Object...)
      */
     @Override
     public BlazeEdge addEdge(final String label, final Vertex to, final Object... kvs) {
@@ -146,8 +146,8 @@ public class BlazeVertex extends AbstractBlazeElement implements Vertex, BlazeEl
      * Strength return type to {@link CloseableIterator}.  You MUST close this
      * iterator when finished.
      *
-     * @see {@link Vertex#edges(Direction, String...)}
-     * @see {@link BlazeGraph#edgesFromVertex(BlazeVertex, Direction, String...)}
+     * @see Vertex#edges(Direction, String...)
+     * @see BlazeGraph#edgesFromVertex(BlazeVertex, Direction, String...)
      */
     @Override
     public CloseableIterator<Edge> edges(final Direction direction, 
@@ -159,7 +159,7 @@ public class BlazeVertex extends AbstractBlazeElement implements Vertex, BlazeEl
      * Strength return type to {@link CloseableIterator}.  You MUST close this
      * iterator when finished.
      * 
-     * @see {@link Vertex#vertices(Direction, String...)}
+     * @see Vertex#vertices(Direction, String...)
      */
     @Override
     public CloseableIterator<Vertex> vertices(final Direction direction, 
@@ -173,8 +173,8 @@ public class BlazeVertex extends AbstractBlazeElement implements Vertex, BlazeEl
     }
     
     /**
-     * @see {@link Vertex#remove()}
-     * @see {@link BlazeGraph#remove(BlazeVertex)}
+     * @see Vertex#remove()
+     * @see BlazeGraph#remove(BlazeVertex)
      */
     @Override
     public void remove() {

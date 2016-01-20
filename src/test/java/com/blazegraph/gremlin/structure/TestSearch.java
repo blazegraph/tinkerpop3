@@ -48,7 +48,7 @@ public class TestSearch extends TestBlazeGraph {
 
     /**
      * Make sure we can find all five kinds of properties:
-     * <p/>
+     * <p>
      * <pre>
      * Edge -> Property
      * Vertex -> VertexProperty(single/set)
@@ -56,6 +56,7 @@ public class TestSearch extends TestBlazeGraph {
      * VertexProperty(single/set) -> Property
      * VertexProperty(list) -> Property
      * </pre>
+     * </p>
      */
     public void testAllFiveKinds() {
         

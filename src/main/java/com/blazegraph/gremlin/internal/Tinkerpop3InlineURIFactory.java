@@ -28,7 +28,7 @@ import com.blazegraph.gremlin.structure.BlazeValueFactory;
 
 /**
  * Use a multi-purpose inline URI factory that will auto-inline URIs
- * in the <blaze:> namespace.
+ * in the {@code <blaze:>} namespace.
  * 
  * @author mikepersonick
  */

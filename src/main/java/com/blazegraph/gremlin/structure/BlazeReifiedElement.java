@@ -40,7 +40,7 @@ public interface BlazeReifiedElement extends BlazeElement {
     /**
      * Strengthen return type.
      * 
-     * @see {@link BlazeElement#rdfId()}
+     * @see BlazeElement#rdfId()
      */
     @Override
     BigdataBNode rdfId();

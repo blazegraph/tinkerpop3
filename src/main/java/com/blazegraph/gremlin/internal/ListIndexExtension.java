@@ -41,7 +41,7 @@ import com.bigdata.rdf.model.BigdataValueFactory;
 
 /**
  * Effective, packed representation of property graph list index typed as
- * <code><http://www.blazegraph.com/rdf/datatype#listIndex></code>.
+ * {@code <http://www.blazegraph.com/rdf/datatype#listIndex>}
  * Builds on the {@link PackedLongIV} datatype for representing timestamps,
  * thus supporting the range [0;72057594037927935L].  Used for Cardinality.list
  * vertex properties.

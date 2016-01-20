@@ -27,7 +27,7 @@ import com.blazegraph.gremlin.embedded.BlazeGraphEmbedded;
 /**
  * Listener interface for a {@link BlazeGraphEmbedded}.
  * 
- * @see {@link BlazeGraphEmbedded#addListener(BlazeGraphListener)}
+ * @see BlazeGraphEmbedded#addListener(BlazeGraphListener)
  * 
  * @author mikepersonick
  */
@@ -39,7 +39,7 @@ public interface BlazeGraphListener {
      * 
      * @param edit
      *          the {@link BlazeGraphEdit}
-     * @param raw
+     * @param rdfEdit
      *          toString() version of the raw RDF mutation
      */
     void graphEdited(BlazeGraphEdit edit, String rdfEdit);

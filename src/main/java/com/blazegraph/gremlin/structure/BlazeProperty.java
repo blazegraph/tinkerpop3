@@ -112,7 +112,7 @@ public class BlazeProperty<V> implements Property<V> {
     }
 
     /**
-     * @see {@link Property#key()}
+     * @see Property#key()
      */
     @Override
     public String key() {
@@ -120,7 +120,7 @@ public class BlazeProperty<V> implements Property<V> {
     }
 
     /**
-     * @see {@link Property#value()}
+     * @see Property#value()
      */
     @Override
     @SuppressWarnings("unchecked")
@@ -129,7 +129,7 @@ public class BlazeProperty<V> implements Property<V> {
     }
     
     /**
-     * @see {@link Property#isPresent()}
+     * @see Property#isPresent()
      */
     @Override
     public boolean isPresent() {
@@ -137,8 +137,8 @@ public class BlazeProperty<V> implements Property<V> {
     }
 
     /**
-     * @see {@link Property#remove()}
-     * @see {@link BlazeGraph#remove(BlazeProperty)}
+     * @see Property#remove()
+     * @see BlazeGraph#remove(BlazeProperty)
      */
     @Override
     public void remove() {
