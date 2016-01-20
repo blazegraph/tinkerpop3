@@ -36,8 +36,10 @@ import org.openrdf.model.URI;
  */
 public class EmptyBlazeProperty<V> extends BlazeProperty<V> {
 
-    public static final EmptyBlazeProperty INSTANCE = new EmptyBlazeProperty<>();
-    public static <V> BlazeProperty<V> instance() {
+    @SuppressWarnings("rawtypes")
+	public static final EmptyBlazeProperty INSTANCE = new EmptyBlazeProperty<>();
+    @SuppressWarnings("unchecked")
+	public static <V> BlazeProperty<V> instance() {
         return INSTANCE;
     }
 
