@@ -276,6 +276,7 @@ Copyright 2010 by TalkingTrends (Amsterdam, The Netherlands)
       <artifactId>icu4j</artifactId>
       <version>4.8</version>
     </dependency>
+<!--
     <dependency>
       <groupId>it.unimi.dsi</groupId>
       <artifactId>dsi-utils</artifactId>
@@ -286,6 +287,7 @@ Copyright 2010 by TalkingTrends (Amsterdam, The Netherlands)
       <artifactId>lgpl-utils</artifactId>
       <version>1.0.7-270114</version>
     </dependency>
+-->
     <dependency>
       <groupId>it.unimi.dsi</groupId>
       <artifactId>fastutil</artifactId>
