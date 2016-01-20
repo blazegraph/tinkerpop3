@@ -18,7 +18,7 @@ Some interesting features of the Blazegraph/TP3 implementation include:
 
 To build blazegraph-gremlin:
 
-    > mvn clean install
+    > mvn clean install -Dtest=SampleCode
 
 To import blazegraph-gremlin into Eclipse:
 
@@ -26,9 +26,32 @@ To import blazegraph-gremlin into Eclipse:
     
 Then select "File-Import-Existing Projects Into Workspace" from the Eclipse menu and select the root directory of this project.
 
-Continue reading and take a look at SampleCode.java provided in blazegraph-gremlin/src/test for information on how to get started writing your TP3 application with Blazegraph.
+Continue reading this document and take a look at SampleCode.java provided in blazegraph-gremlin/src/test for information on how to get started writing your TP3 application with Blazegraph.
 
-Tinkerpop3 is setup to build with Jenkins CI for PRs and the master branch.
+## Gremlin Console
+
+To install the blazegraph-gremlin plugin in the gremlin console:
+
+	gremlin> :install com.blazegraph blazegraph-gremlin 1.0-SNAPSHOT
+	==>Loaded: [com.blazegraph, blazegraph-gremlin, 1.0-SNAPSHOT] - restart the console to use [tinkerpop.blazegraph]
+
+Once you restart the console, activate the blazegraph-gremlin plugin:
+
+	gremlin> :plugin use tinkerpop.blazegraph
+	==>tinkerpop.blazegraph activated
+	
+You can then open a BlazeGraph instance by specifying the location you would like to use for the persistent journal file:
+
+	gremlin> g = BlazeGraphFactory.open("/tmp/blazegraph.jnl")
+	BlazeGraph(TM) Graph Engine
+
+                       Flexible
+                       Reliable
+                      Affordable
+          Web-Scale Computing for the Enterprise
+          
+    Copyright SYSTAP, LLC 2006-2015.  All rights reserved.
+    ==>blazegraphembedded[vertices:0 edges:0]
 
 ## Blazegraph/TP3 Data Model
 
@@ -217,7 +240,12 @@ BlazeGraphEmbedded is instantiated by providing an open and initialized Blazegra
      */
     BlazeGraphEmbedded graph = BlazeGraphEmbedded.open(repo);
 
+There is even a convenience factory that combines those last two steps:
 
+    /*
+     * Open a BlazeGraphEmbedded instance using the specified journal file.
+     */
+    BlazeGraphEmbedded graph = BlazeGraphFactory.open(journal);
 
 ## Beyond the Tinkerpop3 Graph API
 

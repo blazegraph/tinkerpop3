@@ -38,7 +38,10 @@ import org.apache.tinkerpop.gremlin.groovy.plugin.PluginInitializationException;
 public final class BlazeGremlinPlugin extends AbstractGremlinPlugin {
 
     private static final Set<String> IMPORTS = new HashSet<String>() {{
-        add(IMPORT_SPACE + "com.blazegraph.gremlin" + DOT_STAR);
+        add(IMPORT_SPACE + "com.blazegraph.gremlin.embedded" + DOT_STAR);
+        add(IMPORT_SPACE + "com.blazegraph.gremlin.listener" + DOT_STAR);
+        add(IMPORT_SPACE + "com.blazegraph.gremlin.structure" + DOT_STAR);
+        add(IMPORT_SPACE + "com.blazegraph.gremlin.util" + DOT_STAR);
     }};
 
     @Override

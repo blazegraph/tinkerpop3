@@ -55,7 +55,7 @@ Copyright 2010 by TalkingTrends (Amsterdam, The Netherlands)
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <jetty.version>9.2.3.v20140905</jetty.version>
     <tp3.version>3.1.0-incubating</tp3.version>
-    <blaze.version>1.6.1-master-SNAPSHOT</blaze.version>
+    <blaze.version>2.0.0-RC2-SNAPSHOT</blaze.version>
     <apache.commons_fileupload.version>1.3.1</apache.commons_fileupload.version>
     <zookeeper.version>3.4.6</zookeeper.version>
   </properties>
