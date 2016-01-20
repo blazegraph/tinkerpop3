@@ -42,8 +42,13 @@ Copyright 2010 by TalkingTrends (Amsterdam, The Netherlands)
          <url>http://www.gnu.org/licenses/gpl-2.0.html</url>
      </license>
   </licenses>
+  <issueManagement>
+    <system>JIRA</system>
+    <url>https://jira.blazegraph.com/</url>
+  </issueManagement>
   <scm>
      <connection>scm:git:https://github.com/blazegraph/tinkerpop3.git</connection>
+    <developerConnection>scm:git:git@github.com:blazegraph/tinkerpop3.git</developerConnection>
      <url>https://github.com/blazegraph/tinkerpop3.git</url>
   </scm>
   <properties>
