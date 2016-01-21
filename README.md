@@ -1,6 +1,6 @@
 # blazegraph-gremlin
 
-[Blazegraph TinkerPop Logo](images/blazegraph-gremlin.png)
+![Blazegraph TinkerPop Logo](images/blazegraph-gremlin.png)
 
 Welcome to the [Blazegraph](https://www.blazegraph.com)/[TinkerPop3](http://tinkerpop.incubator.apache.org/) project.  The TP3 implementation has some significant differences from the TP2 version.  The data model has been changed to use RDF*, an RDF reification framework described [here](https://wiki.blazegraph.com/wiki/index.php/Reification_Done_Right).
 
