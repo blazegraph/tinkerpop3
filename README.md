@@ -1,7 +1,5 @@
-# tinkerpop3
-Blazegraph Tinkerpop3 Implementation
+# Blazegraph TinkerPop3 Implementation (blazegraph-gremlin)
 =======
-# blazegraph-gremlin
 
 ![Blazegraph TinkerPop Logo](images/blazegraph-gremlin.png)
 
