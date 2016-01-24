@@ -278,11 +278,6 @@ Copyright 2010 by TalkingTrends (Amsterdam, The Netherlands)
     </dependency>
     <dependency>
       <groupId>it.unimi.dsi</groupId>
-      <artifactId>dsi-utils</artifactId>
-      <version>1.0.6-020610</version>
-    </dependency>
-    <dependency>
-      <groupId>it.unimi.dsi</groupId>
       <artifactId>lgpl-utils</artifactId>
       <version>1.0.7-270114</version>
     </dependency>
