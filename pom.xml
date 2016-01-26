@@ -28,8 +28,12 @@ Copyright 2010 by TalkingTrends (Amsterdam, The Netherlands)
   <groupId>com.blazegraph</groupId>
   <artifactId>blazegraph-gremlin</artifactId>
   <packaging>jar</packaging>
-  <version>1.0.1-SNAPSHOT</version>
+  <version>1.0.0-SNAPSHOT</version>
   <name>blazegraph-gremlin</name>
+  <description>Welcome to the Blazegraph/TinkerPop3 project. The TP3 implementation has some significant differences from the TP2 version. The data model has been changed to use RDF*, an RDF reification framework described here: https://wiki.blazegraph.com/wiki/index.php/Reification_Done_Right.
+
+The concept behind blazegraph-gremlin is that property graph (PG) data can be loaded and accessed via the TinkerPop3 API, but underneath the hood the data will be stored as RDF using the PG data model described in this document. Once PG data has been loaded you can interact with it just like you would interact with ordinary RDF - you can run SPARQL queries or interact with the data via the SAIL API. It just works. The PG data model is also customizable via a round-tripping interface called the BlazeValueFactory, also described in detail in this document.</description>
+
   <url>https://www.blazegraph.com/</url>
   <organization>
     <name>SYSTAP, LLC DBA Blazegraph</name>
@@ -58,7 +62,6 @@ Copyright 2010 by TalkingTrends (Amsterdam, The Netherlands)
     <connection>scm:git:https://github.com/blazegraph/tinkerpop3.git</connection>
     <developerConnection>scm:git:git@github.com:blazegraph/tinkerpop3.git</developerConnection>
     <url>https://github.com/blazegraph/tinkerpop3.git</url>
-    <tag>HEAD</tag>
   </scm>
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
