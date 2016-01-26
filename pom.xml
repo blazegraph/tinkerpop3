@@ -28,7 +28,7 @@ Copyright 2010 by TalkingTrends (Amsterdam, The Netherlands)
   <groupId>com.blazegraph</groupId>
   <artifactId>blazegraph-gremlin</artifactId>
   <packaging>jar</packaging>
-  <version>1.0-SNAPSHOT</version>
+  <version>1.0.0-SNAPSHOT</version>
   <name>blazegraph-gremlin</name>
   <url>https://www.blazegraph.com/</url>
   <organization>
@@ -63,7 +63,7 @@ Copyright 2010 by TalkingTrends (Amsterdam, The Netherlands)
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <jetty.version>9.2.3.v20140905</jetty.version>
     <tp3.version>3.1.0-incubating</tp3.version>
-    <blaze.version>2.0.0-SNAPSHOT</blaze.version>
+    <blaze.version>2.0.0</blaze.version>
     <apache.commons_fileupload.version>1.3.1</apache.commons_fileupload.version>
     <zookeeper.version>3.4.6</zookeeper.version>
   </properties>
@@ -151,6 +151,18 @@ Copyright 2010 by TalkingTrends (Amsterdam, The Netherlands)
               </execution>
             </executions>
           </plugin>
+          <!-- Needed for Maven Release plugin plus Sonatype -->
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-release-plugin</artifactId>
+            <version>2.5</version>
+            <configuration>
+              <autoVersionSubmodules>true</autoVersionSubmodules>
+              <useReleaseProfile>false</useReleaseProfile>
+              <releaseProfiles>maven-central</releaseProfiles>
+              <goals>deploy</goals>
+            </configuration>
+          </plugin>
         </plugins>
       </build>
       <distributionManagement>
@@ -220,6 +232,21 @@ Copyright 2010 by TalkingTrends (Amsterdam, The Netherlands)
     </repository>
   </repositories>
   <dependencies>
+    <!-- Junit 4 can cause Hamcrest version issues.
+         See:  http://stackoverflow.com/questions/7869711/getting-nosuchmethoderror-org-hamcrest-matcher-describemismatch-when-running
+    -->
+    <dependency>
+      <groupId>org.hamcrest</groupId>
+      <artifactId>hamcrest-core</artifactId>
+      <version>1.3</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.hamcrest</groupId>
+      <artifactId>hamcrest-library</artifactId>
+      <version>1.3</version>
+      <scope>test</scope>
+    </dependency>
     <!-- TP3 dependencies -->
     <dependency>
       <groupId>org.apache.tinkerpop</groupId>
@@ -242,6 +269,12 @@ Copyright 2010 by TalkingTrends (Amsterdam, The Netherlands)
       <artifactId>gremlin-test</artifactId>
       <version>${tp3.version}</version>
       <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>org.hamcrest</groupId>
+          <artifactId>hamcrest-all</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
     <dependency>
       <groupId>org.apache.tinkerpop</groupId>
@@ -258,14 +291,14 @@ Copyright 2010 by TalkingTrends (Amsterdam, The Netherlands)
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
-      <version>3.8.1</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
       <version>4.11</version>
       <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <groupId>org.hamcrest</groupId>
+          <artifactId>hamcrest-core</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
   </dependencies>
 </project>

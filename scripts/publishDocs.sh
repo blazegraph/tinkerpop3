@@ -1,5 +1,5 @@
 #!/bin/bash
-#Script to publish javadoc to https://blazegraph.github.com/database/apidocs/
+#Script to publish javadoc to https://blazegraph.github.com/
 BASE_DIR=`dirname $0`
 PARENT_POM="${BASE_DIR}/../pom.xml"
 DEST_DIR=tinkerpop3/apidocs/
@@ -23,8 +23,9 @@ mkdir -p "${GITHUB_PAGES}/${DEST_DIR}"
 echo cp -rf "${BASE_DIR}"/../target/site/apidocs/* "${GITHUB_PAGES}/${DEST_DIR}"
 cp -rf "${BASE_DIR}"/../target/site/apidocs/* "${GITHUB_PAGES}/${DEST_DIR}"
 cd $"${GITHUB_PAGES}"
+git pull
 git add --all
-git commit -m "Update for Blazegraph Database Javadocs"
+git commit -m "Update for Blazegraph $DEST_DIR Javadocs"
 git push origin master
 
 popd 

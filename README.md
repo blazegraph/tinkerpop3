@@ -24,12 +24,12 @@ Blazegraph and the TinkerPop3 implementation are available on Maven Central.
    <dependency>
       <groupId>com.blazegraph</groupId>
       <artifactId>blazegraph-gremlin</artifactId>
-      <version>1.0</version>
+      <version>1.0.0</version>
    </dependency>
 ```
 
 ##Javadocs
-[Javadocs](https://blazegraph.github.io/tinkerpop3/apidocs/) 
+Checkout the latest [Javadocs](https://blazegraph.github.io/tinkerpop3/apidocs/).
 
 ## Getting Started
 
@@ -49,8 +49,8 @@ Continue reading this document and take a look at SampleCode.java provided in bl
 
 To install the blazegraph-gremlin plugin in the gremlin console:
 
-	gremlin> :install com.blazegraph blazegraph-gremlin 1.0-SNAPSHOT
-	==>Loaded: [com.blazegraph, blazegraph-gremlin, 1.0-SNAPSHOT] - restart the console to use [tinkerpop.blazegraph]
+	gremlin> :install com.blazegraph blazegraph-gremlin 1.0.0
+	==>Loaded: [com.blazegraph, blazegraph-gremlin, 1.0.0] - restart the console to use [tinkerpop.blazegraph]
 
 Once you restart the console, activate the blazegraph-gremlin plugin:
 
