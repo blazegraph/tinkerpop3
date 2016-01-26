@@ -62,7 +62,6 @@ The concept behind blazegraph-gremlin is that property graph (PG) data can be lo
     <connection>scm:git:https://github.com/blazegraph/tinkerpop3.git</connection>
     <developerConnection>scm:git:git@github.com:blazegraph/tinkerpop3.git</developerConnection>
     <url>https://github.com/blazegraph/tinkerpop3.git</url>
-    <tag>blazegraph-gremlin-1.0.0</tag>
   </scm>
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
