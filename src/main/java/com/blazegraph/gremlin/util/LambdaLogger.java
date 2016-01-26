@@ -1,11 +1,11 @@
 /**
-Copyright (C) SYSTAP, LLC 2006-2016.  All rights reserved.
+Copyright (C) SYSTAP, LLC DBA Blazegraph 2006-2016.  All rights reserved.
 
 Contact:
-     SYSTAP, LLC
+     SYSTAP, LLC DBA Blazegraph
      2501 Calvert ST NW #106
      Washington, DC 20008
-     licenses@systap.com
+     licenses@blazegraph.com
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -41,7 +41,7 @@ import org.apache.log4j.spi.LoggingEvent;
  * 
  * To log conditionally, simply use this syntax:
  * 
- * log.debug(() -> getMessage()); // getMessage() only called if log level >= DEBUG
+ * {@code log.debug(() -> getMessage()); // getMessage() only called if log level >= DEBUG }
  * 
  * In this example getMessage() will not be called unless the log level is
  * set to DEBUG or higher.  Conditional logging drastically improves
@@ -113,7 +113,8 @@ public class LambdaLogger extends Logger {
     }
     
     /**
-     * Checked exception throwing version of Supplier<T>.
+     * 
+     * Checked exception throwing version of {@code Supplier<T>}.
      * 
      * @author mikepersonick
      */
@@ -123,8 +124,8 @@ public class LambdaLogger extends Logger {
     }
     
     /**
-     * Conditionally log at the specified level. Does not call supplier.get() 
-     * unless log.getLevel() >= level (conditional message production).
+     * Conditionally log at the specified level. Does not call {@code supplier.get() } 
+     * unless {@code log.getLevel() >= level} (conditional message production).
      * 
      * If the supplied object is a stream, conditionally log each object in
      * the stream on a separate line.

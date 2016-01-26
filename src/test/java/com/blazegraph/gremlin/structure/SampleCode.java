@@ -1,11 +1,11 @@
 /**
-Copyright (C) SYSTAP, LLC 2006-2016.  All rights reserved.
+Copyright (C) SYSTAP, LLC DBA Blazegraph 2006-2016.  All rights reserved.
 
 Contact:
-     SYSTAP, LLC
+     SYSTAP, LLC DBA Blazegraph
      2501 Calvert ST NW #106
      Washington, DC 20008
-     licenses@systap.com
+     licenses@blazegraph.com
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -126,7 +126,7 @@ public class SampleCode {
     
     /**
      * Demonstration of the bulk load API.
-     * <p/>
+     * <p>
      * The bulk load API provides a means of fast unchecked loading of data into
      * Blazegraph. By default, Blazegraph/TP3 is in "incremental update" mode.
      * Incremental update does strict checking on vertex and edge id re-use and
@@ -140,6 +140,7 @@ public class SampleCode {
      * update mode. The bulk load API is suitable for use in loading
      * "known-good" datasets - datasets that have already been validated for
      * consistency errors.
+     * </p>
      */
     @Test
     public void demonstrateBulkLoadAPI() throws Exception {
@@ -209,7 +210,7 @@ public class SampleCode {
     
     /**
      * Demonstration of the search API.
-     * <p/>
+     * <p>
      * The search API lets you use Blazegraph's built-in full text index to
      * perform Lucene-style searches against your graph. Searches are done
      * against property values - the search results are an iterator of Property
@@ -225,6 +226,7 @@ public class SampleCode {
      * end of a token, the search engine will use prefix matching instead of
      * token matching. Prefix match is either on or off for the entire search,
      * it is not done on a token by token basis.
+     * </p>
      */
     @Test
     public void demonstrateSearchAPI() throws Exception {
@@ -259,7 +261,7 @@ public class SampleCode {
     
     /**
      * Demonstration of the listener API.
-     * <p/>
+     * <p>
      * This API lets you attach listeners to the graph to track graph elements
      * and properties as they are added or removed and to receive notifications
      * of commits and rollbacks. The listener API leverages an internal
@@ -278,6 +280,7 @@ public class SampleCode {
      * the Blazegraph/TP3 data model. BlazeGraphAtoms are wrapped inside
      * BlazeGraphEdits, which describe the action taken on the atom (add or
      * remove).
+     * </p>
      */
     @Test
     public void demonstrateListenerAPI() throws Exception {
@@ -380,7 +383,7 @@ public class SampleCode {
     
     /**
      * Demonstration of the history API.
-     * <p/>
+     * <p>
      * The history API is closely related to the listener API in that the unit
      * of information is the same - BlazeGraphEdits. With the history API, you
      * can look back in time on the history of the graph - when vertices and
@@ -390,6 +393,7 @@ public class SampleCode {
      * information is also modeled using RDF*, meaning the history is part of
      * the raw RDF graph itself. Thus the history information can also be
      * accessed via Sparql.
+     * </p>
      */
     @Test
     public void demonstrateHistoryAPI() throws Exception {
@@ -437,7 +441,7 @@ public class SampleCode {
     
     /**
      * Demonstration of the concurrency API.
-     * <p/>
+     * <p>
      * Blazegraph's concurrency model is MVCC, which more or less lines up with
      * Tinkerpop's Transaction model. When you open a BlazeGraphEmbedded
      * instance, you are working with the unisolated (writer) view of the
@@ -450,20 +454,22 @@ public class SampleCode {
      * automatically closed on any commit or rollback operation. The Transaction
      * can also be closed manually, which you will need to do after read
      * operations to unblock other waiting threads.
-     * <p/>
+     * </p>
+     * <p>
      * BlazegraphGraphEmbedded's database operations are thus single-threaded,
      * but Blazegraph/MVCC allows for many concurrent readers in parallel with
      * both the single writer and other readers. This is possible by opening a
      * read-only view that will read against the last commit point on the
      * database. The read-only view can be be accessed in parallel to the writer
      * without any of the restrictions described above.
-     * <p/>
+     * </p><p>
      * BlazeGraphReadOnly extends BlazeGraphEmbedded and thus offers all the
      * same operations, except write operations will not be permitted
      * (BlazeGraphReadOnly.tx() will throw an exception). You can open as many
      * read-only views as you like, but we recommend you use a connection pool
      * so as not to overtax system resources. Applications should be written
      * with the one-writer many-readers paradigm front of mind.
+     * </p>
      */
     @Test 
     public void demonstrateConcurrencyAPI() throws Exception {
@@ -513,7 +519,6 @@ public class SampleCode {
     
     /**
      * Demonstration of the Sparql/PG API.
-     * <p/>
      * 
      */
     @Test 

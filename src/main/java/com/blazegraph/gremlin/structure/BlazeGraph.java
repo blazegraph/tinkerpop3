@@ -1,11 +1,11 @@
 /**
-Copyright (C) SYSTAP, LLC 2006-2016.  All rights reserved.
+Copyright (C) SYSTAP, LLC DBA Blazegraph 2006-2016.  All rights reserved.
 
 Contact:
-     SYSTAP, LLC
+     SYSTAP, LLC DBA Blazegraph
      2501 Calvert ST NW #106
      Washington, DC 20008
-     licenses@systap.com
+     licenses@blazegraph.com
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -89,15 +89,15 @@ import info.aduna.iteration.CloseableIteration;
 /**
  * Blazegraph/tinkerpop3 integration.  Handles the mapping between the 
  * tinkerpop3 data model and a custom RDF/PG data model using RDF*.
- * <p/>
+ * 
  * Currently the only concrete implementation of this class is
  * {@link BlazeGraphEmbedded}, which provides an embedded (same JVM)
  * implementation of the Blazegraph/tinkerpop3 API.
- * <p/>
+ * 
  * See {@link BlazeGraphFeatures} for what tinkerpop3 features this
  * implementation supports. In addition to the tinkerpop3 features, this API
  * also provides the following:
- * <p/>
+ * 
  * <ul>
  * <li>History API - capture full or partial history of edits to the graph.</li>
  * <li>Built-in full text index and search API to find graph elements.</li>
@@ -106,14 +106,14 @@ import info.aduna.iteration.CloseableIteration;
  * <li>Query management API - list and cancel running Sparql queries.</li>
  * <li>Bulk Load API for fast setup of new graphs.</li>
  * </ul>
- * <p/>
+ * 
  * And an additional two features specific to the embedded implementation:
+ * 
  * <ul>
  * <li>Listener API - subscribe to notifications about updates to the graph 
  *     (adds and removes of vertices/edges/properties, commits, rollbacks, etc.)</li>
  * <li>Support for MVCC concurrency model for high-concurrency read access.</li>
  * </ul>
- *  
  * @author mikepersonick
  */
 @Graph.OptIn("com.blazegraph.gremlin.structure.StructureStandardSuite")
@@ -137,7 +137,7 @@ public abstract class BlazeGraph implements Graph {
 
         /**
          * The {@link BlazeValueFactory} instance this graph should use.
-         * Defaults to {@link DefaultBlazeValueFactory#INSTANCE}.
+         * Defaults to {@link BlazeValueFactory#INSTANCE}.
          */
         String VALUE_FACTORY = BlazeGraph.class.getName() + ".valueFactory";
         
@@ -313,7 +313,7 @@ public abstract class BlazeGraph implements Graph {
      * Returns whether the graph is in bulkLoad (true) or incremental update
      * (false) mode.  Incremental update is the default mode
      * 
-     * @see {@link #setBulkLoad(boolean)}
+     * @see #setBulkLoad(boolean)
      */
     public boolean isBulkLoad() {
         return bulkLoad;
@@ -328,8 +328,9 @@ public abstract class BlazeGraph implements Graph {
      * greater write throughput and is suitable for loading a new data set into
      * an empty graph or loading data that does overlap with any data already in
      * an existing graph.
-     * <p/>
+     * 
      * Default is incremental update (bulkLoad = false).
+     * 
      */
     public void setBulkLoad(final boolean bulkLoad) {
         this.bulkLoad = bulkLoad;
@@ -339,7 +340,7 @@ public abstract class BlazeGraph implements Graph {
      * Execute the supplied code fragment in bulk load mode and reset to 
      * incremental mode when finished.
      * 
-     * @see {@link #setBulkLoad(boolean)}
+     * @see #setBulkLoad(boolean)
      */
     public void bulkLoad(final Code code) {
         if (isBulkLoad()) {
@@ -396,7 +397,7 @@ public abstract class BlazeGraph implements Graph {
     /**
      * Add a vertex.
      * 
-     * @see {@link Graph#addVertex(Object...)}
+     * @see Graph#addVertex(Object...)
      */
     @Override
     public BlazeVertex addVertex(final Object... kvs) {
@@ -436,7 +437,7 @@ public abstract class BlazeGraph implements Graph {
      * Add an edge. Helper for {@link BlazeVertex#addEdge(String, Vertex, Object...)}
      * to consolidate these operations in one place.
      * 
-     * @see {@link Vertex#addEdge(String, Vertex, Object...)}.
+     * @see Vertex#addEdge(String, Vertex, Object...)
      */
     public BlazeEdge addEdge(final BlazeVertex from, final BlazeVertex to,
             final String label, final Object... kvs) {
@@ -643,7 +644,7 @@ public abstract class BlazeGraph implements Graph {
      * Remove a vertex, cleaning any attached edges and vertex properties (and
      * their properties).
      * 
-     * @see {@link Vertex#remove()}
+     * @see Vertex#remove()
      */
     void remove(final BlazeVertex vertex) {
         final String queryStr = sparql.removeVertex(vertex);
@@ -653,8 +654,8 @@ public abstract class BlazeGraph implements Graph {
     /**
      * Remove an edge or a vertex property (and its properties).
      * 
-     * @see {@link Edge#remove()}
-     * @see {@link VertexProperty#remove()}
+     * @see Edge#remove()
+     * @see VertexProperty#remove()
      */
     void remove(final BlazeReifiedElement element) {
         final String queryStr = sparql.removeReifiedElement(element);
@@ -664,7 +665,7 @@ public abstract class BlazeGraph implements Graph {
     /**
      * Remove a property.
      * 
-     * @see {@link Property#remove()}
+     * @see Property#remove()
      */
     <V> void remove(final BlazeProperty<V> prop) {
         final RepositoryConnection cxn = cxn();
@@ -758,7 +759,7 @@ public abstract class BlazeGraph implements Graph {
     /**
      * Lookup edges from a source vertex.
      * 
-     * @see {@link Vertex#edges(Direction, String...)}.
+     * @see Vertex#edges(Direction, String...)
      */
     CloseableIterator<Edge> edgesFromVertex(final BlazeVertex src, 
             final Direction dir, final String... edgeLabels) {
@@ -776,8 +777,8 @@ public abstract class BlazeGraph implements Graph {
      * strengthened from normal iterator. You MUST close this iterator when 
      * finished.
      * 
-     * @see {@link Edge#properties(String...)}
-     * @see {@link VertexProperty#properties(String...)}
+     * @see Edge#properties(String...)
+     * @see VertexProperty#properties(String...)
      */
     <V> CloseableIterator<Property<V>> properties(
             final BlazeReifiedElement element, final String... keys) {
@@ -795,7 +796,7 @@ public abstract class BlazeGraph implements Graph {
      * strengthened from normal iterator. You MUST close this iterator when 
      * finished.
      * 
-     * @see {@link Vertex#properties(String...)}
+     * @see Vertex#properties(String...)
      */
     <V> CloseableIterator<VertexProperty<V>> properties(
             final BlazeVertex vertex, final String... keys) {
@@ -823,8 +824,8 @@ public abstract class BlazeGraph implements Graph {
      * Helper to parse URIs from a list of element ids for lookup of
      * vertices or edges.
      * 
-     * @see {@link #vertices(Object...)}
-     * @see {@link #edges(Object...)}
+     * @see #vertices(Object...)
+     * @see #edges(Object...)
      */
     private List<URI> validateIds(final Object... elementIds) {
         ElementHelper.validateMixedElementIds(Element.class, elementIds);
@@ -849,7 +850,7 @@ public abstract class BlazeGraph implements Graph {
     /**
      * Return the transaction object for this graph. Implementation-specific.
      * 
-     * @see {@link BlazeTransaction}
+     * @see BlazeTransaction
      */
     @Override
     public abstract Transaction tx();
@@ -857,7 +858,7 @@ public abstract class BlazeGraph implements Graph {
     /**
      * Close the graph.  Implementation-specific.
      * 
-     * @see {@link BlazeGraphEmbedded#close}
+     * @see BlazeGraphEmbedded#close
      */
     @Override
     public abstract void close();
@@ -873,7 +874,7 @@ public abstract class BlazeGraph implements Graph {
     /**
      * Return the features.
      * 
-     * @see {@link BlazeGraphFeatures}
+     * @see BlazeGraphFeatures
      */
     @Override
     public BlazeGraphFeatures features() {
@@ -1020,16 +1021,16 @@ public abstract class BlazeGraph implements Graph {
      * <p>
      * Warning: You MUST close this iterator when finished.
      * 
-     * @see {@link AbstractTripleStore.Options#STATEMENT_IDENTIFIERS}
-     * @see {@link AbstractTripleStore.Options#RDR_HISTORY_CLASS}
-     * @see {@link RDRHistory}
+     * @see AbstractTripleStore.Options#STATEMENT_IDENTIFIERS
+     * @see AbstractTripleStore.Options#RDR_HISTORY_CLASS
+     * @see RDRHistory
      */
     public CloseableIterator<BlazeGraphEdit> history(final String... ids) {
         return history(Arrays.asList(ids));
     }
         
     /**
-     * @see {@link #history(String...)}
+     * @see #history(String...)
      */
     public CloseableIterator<BlazeGraphEdit> history(final List<String> ids) {
         validateHistoryIds(ids);

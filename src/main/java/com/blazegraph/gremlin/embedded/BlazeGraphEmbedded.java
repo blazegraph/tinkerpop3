@@ -1,11 +1,11 @@
 /**
-Copyright (C) SYSTAP, LLC 2006-2016.  All rights reserved.
+Copyright (C) SYSTAP, LLC DBA Blazegraph 2006-2016.  All rights reserved.
 
 Contact:
-     SYSTAP, LLC
+     SYSTAP, LLC DBA Blazegraph
      2501 Calvert ST NW #106
      Washington, DC 20008
-     licenses@systap.com
+     licenses@blazegraph.com
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -86,7 +86,7 @@ import com.blazegraph.gremlin.util.LambdaLogger;
 /**
  * An implementation of the tinkerpop3 API that uses an embedded SAIL repository
  * instance (same JVM).
- * <p/>
+ * <p>
  * Currently BlazeGraphEmbedded is the only concrete implementation of the
  * Blazegraph Tinkerpop3 API. BlazeGraphEmbedded is backed by an embedded (same
  * JVM) instance of Blazegraph. This puts the enterprise features of Blazegraph
@@ -94,7 +94,7 @@ import com.blazegraph.gremlin.util.LambdaLogger;
  * TP3 integration, since those features are accessed via Blazegraph's
  * client/server API. A TP3 integration with the client/server version of
  * Blazegraph is reserved for a future blazegraph-tinkerpop release.
- * <p/>
+ * </p><p>
  * Blazegraph's concurrency model is MVCC, which more or less lines up with
  * Tinkerpop's Transaction model. When you open a BlazeGraphEmbedded instance,
  * you are working with the unisolated (writer) view of the database. This view
@@ -106,7 +106,7 @@ import com.blazegraph.gremlin.util.LambdaLogger;
  * or write operation, and automatically closed on any commit or rollback
  * operation. The Transaction can also be closed manually, which you will need
  * to do after read operations to unblock other waiting threads.
- * <p/>
+ * </p><p>
  * BlazegraphGraphEmbedded's database operations are thus single-threaded, but
  * Blazegraph/MVCC allows for many concurrent readers in parallel with both the
  * single writer and other readers. This is possible by opening a read-only view
@@ -114,7 +114,7 @@ import com.blazegraph.gremlin.util.LambdaLogger;
  * view can be be accessed in parallel to the writer without any of the
  * restrictions described above. To get a read-only snapshot, use the following
  * pattern:
- * <p/>
+ * </p>
  * <pre>
  * final BlazeGraphEmbedded unisolated = ...; 
  * final BlazeGraphReadOnly readOnly = unisolated.readOnlyConnection(); 
@@ -124,17 +124,17 @@ import com.blazegraph.gremlin.util.LambdaLogger;
  *     readOnly.close(); 
  * }
  * </pre>
- * <p/>
+ * <p>
  * BlazeGraphReadOnly extends BlazeGraphEmbedded and thus offers all the same
  * operations, except write operations will not be permitted
  * (BlazeGraphReadOnly.tx() will throw an exception). You can open as many
  * read-only views as you like, but we recommend you use a connection pool so as
  * not to overtax system resources. Applications should be written with the
  * one-writer many-readers paradigm front of mind.
- * <p/>
+ * </p><p>
  * Important: Make sure to close the read-only view as soon as you are done with
  * it.
- * 
+ * </p> 
  * @author mikepersonick
  */
 public class BlazeGraphEmbedded extends BlazeGraph {
@@ -254,7 +254,7 @@ public class BlazeGraphEmbedded extends BlazeGraph {
     /**
      * Graph listeners.
      * 
-     * @see {@link BlazeGraphListener}
+     * @see BlazeGraphListener
      */
     protected final List<BlazeGraphListener> listeners = new CopyOnWriteArrayList<>();
     
@@ -274,7 +274,7 @@ public class BlazeGraphEmbedded extends BlazeGraph {
     /**
      * Hidden constructor - use {@link #open(BigdataSailRepository, Configuration)}.
      * 
-     * @return
+     * @param repo
      *          an open and initialized repository
      * @param config
      *          additional configuration
@@ -291,9 +291,10 @@ public class BlazeGraphEmbedded extends BlazeGraph {
      * can be used for read operations in parallel with the write view (this
      * view) and other read views.  Read views do not supports Tinkerpop
      * Transactions or write operations.
-     * <p/>
+     * <p>
      * These should be bounded in number by your application and always
      * closed when done using them.
+     * </p>
      *  
      * @return
      *      a read-only view on the last commit point
@@ -649,7 +650,7 @@ public class BlazeGraphEmbedded extends BlazeGraph {
     /**
      * Pass through to tx().commit().
      * 
-     * @see {@link BlazeTransaction#commit}.
+     * @see BlazeTransaction#commit
      */
     public void commit() {
         if (closed) throw Exceptions.alreadyClosed();
@@ -660,7 +661,7 @@ public class BlazeGraphEmbedded extends BlazeGraph {
     /**
      * Pass through to tx().rollbakc().
      * 
-     * @see {@link BlazeTransaction#rollback}.
+     * @see BlazeTransaction#rollback
      */
     public void rollback() {
         if (closed) throw Exceptions.alreadyClosed();
@@ -671,7 +672,7 @@ public class BlazeGraphEmbedded extends BlazeGraph {
     /**
      * Pass through to tx().flush().
      * 
-     * @see {@link BlazeTransaction#flush}.
+     * @see BlazeTransaction#flush
      */
     public void flush() {
         if (closed) throw Exceptions.alreadyClosed();
@@ -683,7 +684,7 @@ public class BlazeGraphEmbedded extends BlazeGraph {
      * Close the unisolated connection if open and close the repository.  Default
      * close behavior is to roll back any uncommitted changes.
      * 
-     * @see {@link Transaction.CLOSE_BEHAVIOR}
+     * @see Transaction.CLOSE_BEHAVIOR
      */
     protected volatile boolean closed = false;
     @Override
@@ -729,7 +730,7 @@ public class BlazeGraphEmbedded extends BlazeGraph {
     /**
      * Return the RDF value factory.
      * 
-     * @see {@link BigdataValueFactory}
+     * @see BigdataValueFactory
      */
     public BigdataValueFactory rdfValueFactory() {
         return (BigdataValueFactory) repo.getValueFactory();

@@ -1,11 +1,11 @@
 /**
-Copyright (C) SYSTAP, LLC 2006-2016.  All rights reserved.
+Copyright (C) SYSTAP, LLC DBA Blazegraph 2006-2016.  All rights reserved.
 
 Contact:
-     SYSTAP, LLC
+     SYSTAP, LLC DBA Blazegraph
      2501 Calvert ST NW #106
      Washington, DC 20008
-     licenses@systap.com
+     licenses@blazegraph.com
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -40,18 +40,22 @@ import com.blazegraph.gremlin.util.CloseableIterator;
 
 /**
  * Concrete edge implementation for Blazegraph.
- * <p/>
+ * <p>
  * Edge existence is represented as two triples as follows:
- * <p/>
+ * </p>
  * <pre>
+ * {@code
  *     :fromId :edgeId :toId .
  *     <<:fromId :edgeId :toId>> rdf:type :label .
+ * }
  * </pre>
- * <p/>
+ * <p>
  * Edge properties are represented as follows:
- * <p/>
+ * </p>
  * <pre>
+ * {@code
  *     <<:fromId :edgeId :toId>> :key "val" .
+ * }
  * </pre>
  * 
  * @author mikepersonick
@@ -105,8 +109,8 @@ public class BlazeEdge extends AbstractBlazeElement implements Edge, BlazeReifie
     }
     
     /**
-     * @see {@link Edge#remove()}
-     * @see {@link BlazeGraph#remove(BlazeReifiedElement)}
+     * @see Edge#remove()
+     * @see BlazeGraph#remove(BlazeReifiedElement)
      */
     @Override
     public void remove() {
@@ -131,7 +135,7 @@ public class BlazeEdge extends AbstractBlazeElement implements Edge, BlazeReifie
     }
     
     /**
-     * @see {@link Edge#outVertex()} 
+     * @see  Edge#outVertex()
      */
     @Override
     public Vertex outVertex() {
@@ -139,7 +143,7 @@ public class BlazeEdge extends AbstractBlazeElement implements Edge, BlazeReifie
     }
 
     /**
-     * @see {@link Edge#inVertex()} 
+     * @see Edge#inVertex()
      */
     @Override
     public Vertex inVertex() {
@@ -147,7 +151,7 @@ public class BlazeEdge extends AbstractBlazeElement implements Edge, BlazeReifie
     }
 
     /**
-     * @see {@link Edge#bothVertices()} 
+     * @see Edge#bothVertices()
      */
     @Override
     public Iterator<Vertex> bothVertices() {
@@ -155,7 +159,7 @@ public class BlazeEdge extends AbstractBlazeElement implements Edge, BlazeReifie
     }
 
     /**
-     * @see {@link Edge#vertices(Direction)} 
+     * @see Edge#vertices(Direction)
      */
     @Override
     public Iterator<Vertex> vertices(final Direction direction) {

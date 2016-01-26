@@ -1,11 +1,11 @@
 /**
-Copyright (C) SYSTAP, LLC 2006-2016.  All rights reserved.
+Copyright (C) SYSTAP, LLC DBA Blazegraph 2006-2016.  All rights reserved.
 
 Contact:
-     SYSTAP, LLC
+     SYSTAP, LLC DBA Blazegraph
      2501 Calvert ST NW #106
      Washington, DC 20008
-     licenses@systap.com
+     licenses@blazegraph.com
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -35,9 +35,10 @@ import com.blazegraph.gremlin.util.Code;
  * read-only views as you like, but we recommend you use a connection pool so as
  * not to overtax system resources. Applications should be written with the
  * one-writer many-readers paradigm front of mind.
- * <p/>
+ * <p>
  * Important: Make sure to close the read-only view as soon as you are done with
  * it.
+ * </p>
  *
  * @author mikepersonick
  */

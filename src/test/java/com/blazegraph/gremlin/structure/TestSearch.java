@@ -1,11 +1,11 @@
 /**
-Copyright (C) SYSTAP, LLC 2006-2016.  All rights reserved.
+Copyright (C) SYSTAP, LLC DBA Blazegraph 2006-2016.  All rights reserved.
 
 Contact:
-     SYSTAP, LLC
+     SYSTAP, LLC DBA Blazegraph
      2501 Calvert ST NW #106
      Washington, DC 20008
-     licenses@systap.com
+     licenses@blazegraph.com
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -48,7 +48,7 @@ public class TestSearch extends TestBlazeGraph {
 
     /**
      * Make sure we can find all five kinds of properties:
-     * <p/>
+     * <p>
      * <pre>
      * Edge -> Property
      * Vertex -> VertexProperty(single/set)
@@ -56,6 +56,7 @@ public class TestSearch extends TestBlazeGraph {
      * VertexProperty(single/set) -> Property
      * VertexProperty(list) -> Property
      * </pre>
+     * </p>
      */
     public void testAllFiveKinds() {
         

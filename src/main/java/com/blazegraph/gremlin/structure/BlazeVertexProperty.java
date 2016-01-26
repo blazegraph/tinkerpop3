@@ -1,11 +1,11 @@
 /**
-Copyright (C) SYSTAP, LLC 2006-2016.  All rights reserved.
+Copyright (C) SYSTAP, LLC DBA Blazegraph 2006-2016.  All rights reserved.
 
 Contact:
-     SYSTAP, LLC
+     SYSTAP, LLC DBA Blazegraph
      2501 Calvert ST NW #106
      Washington, DC 20008
-     licenses@systap.com
+     licenses@blazegraph.com
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -37,34 +37,39 @@ import com.blazegraph.gremlin.util.CloseableIterator;
 
 /**
  * Concrete vertex property implementation for Blazegraph.
- * <p/>
+ * 
+ * <p>
  * Vertex properties can be represented in one of two ways depending on the
  * cardinality of the key.  Cardinality.single and Cardinality.set are
  * represented the same way, as follows:
- * <p/>
+ * </p>
+ * 
  * <pre>
  *     :vertexId :key "val" .
  * </pre>
- * <p/>
+ * 
  * For Cardinality.list, a list index literal with a special datatype is used 
  * to manage duplicate list items and ordering.  Cardinality.list requires two 
  * triples instead of one:
- * <p/>
  * <pre>
+ * {@code
  *     :vertexId :key "0"^^blazegraph:listIndex .
  *     <<:vertexId :key "0"^^blazegraph:listIndex>> rdf:value "val" .
+ * }
  * </pre>
- * <p/>
+ * 
+ * <p>
  * In either case, meta-properties can be attached to the reified vertex
  * property triple: 
- * <p/>
+ * </p>
  * <pre>
+ * {@code
  *     # for Cardinality.single and Cardinality.set
  *     <<:vertexId :key "val">> :metaKey "metaVal" .
  *     # for Cardinality.list
  *     <<:vertexId :key "0"^^blazegraph:listIndex>> :metaKey "metaVal" .
+ * }
  * </pre>
- * 
  * @author mikepersonick
  *
  * @param <V>
@@ -156,7 +161,7 @@ public class BlazeVertexProperty<V>
     }
 
     /**
-     * @see {@link Property#isPresent()}}
+     * @see Property#isPresent()
      */
     @Override
     public boolean isPresent() {
@@ -164,8 +169,8 @@ public class BlazeVertexProperty<V>
     }
 
     /**
-     * @see {@link Property#remove()}
-     * @see {@link BlazeGraph#remove(BlazeReifiedElement)}
+     * @see Property#remove()
+     * @see BlazeGraph#remove(BlazeReifiedElement)
      */
     @Override
     public void remove() {

@@ -1,11 +1,11 @@
 /**
-Copyright (C) SYSTAP, LLC 2006-2016.  All rights reserved.
+Copyright (C) SYSTAP, LLC DBA Blazegraph 2006-2016.  All rights reserved.
 
 Contact:
-     SYSTAP, LLC
+     SYSTAP, LLC DBA Blazegraph
      2501 Calvert ST NW #106
      Washington, DC 20008
-     licenses@systap.com
+     licenses@blazegraph.com
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -41,7 +41,7 @@ import com.bigdata.rdf.model.BigdataValueFactory;
 
 /**
  * Effective, packed representation of property graph list index typed as
- * <code><http://www.blazegraph.com/rdf/datatype#listIndex></code>.
+ * {@code <http://www.blazegraph.com/rdf/datatype#listIndex>}
  * Builds on the {@link PackedLongIV} datatype for representing timestamps,
  * thus supporting the range [0;72057594037927935L].  Used for Cardinality.list
  * vertex properties.

@@ -1,11 +1,11 @@
 /**
-Copyright (C) SYSTAP, LLC 2006-2016.  All rights reserved.
+Copyright (C) SYSTAP, LLC DBA Blazegraph 2006-2016.  All rights reserved.
 
 Contact:
-     SYSTAP, LLC
+     SYSTAP, LLC DBA Blazegraph
      2501 Calvert ST NW #106
      Washington, DC 20008
-     licenses@systap.com
+     licenses@blazegraph.com
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -27,7 +27,7 @@ import com.blazegraph.gremlin.embedded.BlazeGraphEmbedded;
 /**
  * Listener interface for a {@link BlazeGraphEmbedded}.
  * 
- * @see {@link BlazeGraphEmbedded#addListener(BlazeGraphListener)}
+ * @see BlazeGraphEmbedded#addListener(BlazeGraphListener)
  * 
  * @author mikepersonick
  */
@@ -39,7 +39,7 @@ public interface BlazeGraphListener {
      * 
      * @param edit
      *          the {@link BlazeGraphEdit}
-     * @param raw
+     * @param rdfEdit
      *          toString() version of the raw RDF mutation
      */
     void graphEdited(BlazeGraphEdit edit, String rdfEdit);

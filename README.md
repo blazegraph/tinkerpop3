@@ -1,8 +1,11 @@
-# blazegraph-gremlin
+# Blazegraph TinkerPop3 Implementation (blazegraph-gremlin)
+=======
 
-Welcome to the Blazegraph/Tinkerpop3 project.  The TP3 implementation has some significant differences from the TP2 version.  The data model has been changed to use RDF*, an RDF reification framework described [here](https://wiki.blazegraph.com/wiki/index.php/Reification_Done_Right).
+![Blazegraph TinkerPop Logo](images/blazegraph-gremlin.png)
 
-The concept behind blazegraph-gremlin is that property graph (PG) data can be loaded and accessed via the Tinkerpop3 API, but underneath the hood the data will be stored as RDF using the PG data model described in this document.  Once PG data has been loaded you can interact with it just like you would interact with ordinary RDF - you can run SPARQL queries or interact with the data via the SAIL API.  It just works.  The PG data model is also customizable via a round-tripping interface called the BlazeValueFactory, also described in detail in this document.
+Welcome to the [Blazegraph](https://www.blazegraph.com)/[TinkerPop3](http://tinkerpop.incubator.apache.org/) project.  The TP3 implementation has some significant differences from the TP2 version.  The data model has been changed to use RDF*, an RDF reification framework described [here](https://wiki.blazegraph.com/wiki/index.php/Reification_Done_Right).
+
+The concept behind blazegraph-gremlin is that property graph (PG) data can be loaded and accessed via the TinkerPop3 API, but underneath the hood the data will be stored as RDF using the PG data model described in this document.  Once PG data has been loaded you can interact with it just like you would interact with ordinary RDF - you can run SPARQL queries or interact with the data via the SAIL API.  It just works.  The PG data model is also customizable via a round-tripping interface called the BlazeValueFactory, also described in detail in this document.
 
 Some interesting features of the Blazegraph/TP3 implementation include:
 
@@ -13,6 +16,20 @@ Some interesting features of the Blazegraph/TP3 implementation include:
 * Query management API - list and cancel running Sparql queries.
 * Bulk Load API for fast setup of new graphs.
 * Support for MVCC concurrency model for high-concurrency read access.
+
+## Maven Central Dependency
+Blazegraph and the TinkerPop3 implementation are available on Maven Central.
+
+```
+   <dependency>
+      <groupId>com.blazegraph</groupId>
+      <artifactId>blazegraph-gremlin</artifactId>
+      <version>1.0.0</version>
+   </dependency>
+```
+
+##Javadocs
+Checkout the latest [Javadocs](https://blazegraph.github.io/tinkerpop3/apidocs/).
 
 ## Getting Started
 
@@ -32,8 +49,8 @@ Continue reading this document and take a look at SampleCode.java provided in bl
 
 To install the blazegraph-gremlin plugin in the gremlin console:
 
-	gremlin> :install com.blazegraph blazegraph-gremlin 1.0-SNAPSHOT
-	==>Loaded: [com.blazegraph, blazegraph-gremlin, 1.0-SNAPSHOT] - restart the console to use [tinkerpop.blazegraph]
+	gremlin> :install com.blazegraph blazegraph-gremlin 1.0.0
+	==>Loaded: [com.blazegraph, blazegraph-gremlin, 1.0.0] - restart the console to use [tinkerpop.blazegraph]
 
 Once you restart the console, activate the blazegraph-gremlin plugin:
 
@@ -50,7 +67,7 @@ You can then open a BlazeGraph instance by specifying the location you would lik
                       Affordable
           Web-Scale Computing for the Enterprise
           
-    Copyright SYSTAP, LLC 2006-2015.  All rights reserved.
+    Copyright SYSTAP, LLC DBA Blazegraph 2006-2016.  All rights reserved.
     ==>blazegraphembedded[vertices:0 edges:0]
 
 ## Blazegraph/TP3 Data Model
@@ -105,7 +122,7 @@ Cardinality.list uses a specially datatyped and monotonically increasing interna
 
 #### Putting it all together: The Crew
 
-Here is how the Tinkerpop3 "Crew" dataset looks when loaded into Blazegraph.  Human-friendly IDs have been assigned to vertices and edge UUIDs have been abbreviated to 5 characters for brevity.
+Here is how the TinkerPop3 "Crew" dataset looks when loaded into Blazegraph.  Human-friendly IDs have been assigned to vertices and edge UUIDs have been abbreviated to 5 characters for brevity.
 
     blaze:tinkergraph rdf:type blaze:software ;
                       blaze:name "tinkergraph" .
@@ -211,9 +228,9 @@ Here is how the Tinkerpop3 "Crew" dataset looks when loaded into Blazegraph.  Hu
         
 ## Getting up and running with Blazegraph/TP3
 
-Currently **BlazeGraphEmbedded** is the only concrete implementation of the Blazegraph Tinkerpop3 API.  BlazeGraphEmbedded is backed by an embedded (same JVM) instance of Blazegraph.  This puts the enterprise features of Blazegraph (high-availability, scale-out, etc.) out of reach for the 1.0 version of the TP3 integration, since those features are accessed via Blazegraph's client/server API.  A TP3 integration with the client/server version of Blazegraph is reserved for a future blazegraph-tinkerpop release.
+Currently **BlazeGraphEmbedded** is the only concrete implementation of the Blazegraph TinkerPop3 API.  BlazeGraphEmbedded is backed by an embedded (same JVM) instance of Blazegraph.  This puts the enterprise features of Blazegraph (high-availability, scale-out, etc.) out of reach for the 1.0 version of the TP3 integration, since those features are accessed via Blazegraph's client/server API.  A TP3 integration with the client/server version of Blazegraph is reserved for a future blazegraph-tinkerpop release.
 
-BlazeGraphEmbedded is instantiated by providing an open and initialized Blazegraph RDF repository (OpenRDF SAIL).  There a numerous resources available at [blazegraph.com](http://wiki.blazegraph.com) on how to configure a Blazegraph SAIL, however blazegraph-gremlin comes with a quick start factory that will allow you to get up and running with Blazegraph with a reasonable set of defaults for the Tinkerpop3 API.  BasicRepositoryProvider in blazegraph-gremlin/src/main allows you to create or open an RDF repository backed by a persistent journal file at a specified location.  This RDF repository can then be used to open a BlazeGraphEmbedded instance:
+BlazeGraphEmbedded is instantiated by providing an open and initialized Blazegraph RDF repository (OpenRDF SAIL).  There a numerous resources available at [blazegraph.com](http://wiki.blazegraph.com) on how to configure a Blazegraph SAIL, however blazegraph-gremlin comes with a quick start factory that will allow you to get up and running with Blazegraph with a reasonable set of defaults for the TinkerPop3 API.  BasicRepositoryProvider in blazegraph-gremlin/src/main allows you to create or open an RDF repository backed by a persistent journal file at a specified location.  This RDF repository can then be used to open a BlazeGraphEmbedded instance:
 
     /*
      * A journal file is the persistence mechanism for an embedded 
@@ -224,7 +241,7 @@ BlazeGraphEmbedded is instantiated by providing an open and initialized Blazegra
     /*
      * BasicRepositoryProvider will create a Blazegraph repository using the
      * specified journal file with a reasonable default configuration set
-     * for the Tinkerpop3 API. This will also open a previously created
+     * for the TinkerPop3 API. This will also open a previously created
      * repository if the specified journal already exists.
      * 
      * ("Bigdata" is the legacy product name for Blazegraph).
@@ -247,9 +264,9 @@ There is even a convenience factory that combines those last two steps:
      */
     BlazeGraphEmbedded graph = BlazeGraphFactory.open(journal);
 
-## Beyond the Tinkerpop3 Graph API
+## Beyond the TinkerPop3 Graph API
 
-Blazegraph/TP3 has a number of features that go beyond the standard Tinkerpop3 Graph API.
+Blazegraph/TP3 has a number of features that go beyond the standard TinkerPop3 Graph API.
 
 ### Bulk Load API
 
@@ -416,7 +433,7 @@ Sample usage of this API can be found in SampleCode.demonstrateHistoryAPI(), whi
 
 ### Transaction and Concurrency API
 
-Blazegraph's concurrency model is MVCC, which more or less lines up with Tinkerpop's Transaction model.  When you open a BlazeGraphEmbedded instance, you are working with the unisolated (writer) view of the database.  This view supports Tinkerpop Transactions, and reads are done against the unisolated connection, so uncommitted changes will be visible.  A BlazeGraphEmbedded can be shared across multiple threads, but only one thread can have a Tinkerpop Transaction open at a time (other threads will be blocked until the transaction is closed).  A TP3 Transaction is automatically opened on any read or write operation, and automatically closed on any commit or rollback operation.  The Transaction can also be closed manually, which you will need to do after read operations to unblock other waiting threads.
+Blazegraph's concurrency model is MVCC, which more or less lines up with TinkerPop's Transaction model.  When you open a BlazeGraphEmbedded instance, you are working with the unisolated (writer) view of the database.  This view supports TinkerPop Transactions, and reads are done against the unisolated connection, so uncommitted changes will be visible.  A BlazeGraphEmbedded can be shared across multiple threads, but only one thread can have a TinkerPop Transaction open at a time (other threads will be blocked until the transaction is closed).  A TP3 Transaction is automatically opened on any read or write operation, and automatically closed on any commit or rollback operation.  The Transaction can also be closed manually, which you will need to do after read operations to unblock other waiting threads.
 
 BlazegraphGraphEmbedded's database operations are thus single-threaded, but Blazegraph/MVCC allows for many concurrent readers in parallel with both the single writer and other readers.  This is possible by opening a read-only view that will read against the last commit point on the database.  The read-only view can be be accessed in parallel to the writer without any of the restrictions described above.  To get a read-only snapshot, use the following pattern:
 
@@ -440,7 +457,7 @@ Since it is an RDF graph database at its core, Blazegraph supports the full Spar
 
 Blazegraph has one of the fastest native query engines of any graph database.  Currently blazegraph-gremlin does not provide a native TraversalStrategy implementation for Gremlin.  Gremlin traversals will thus be executed via the graph API rather than compiled down into Sparql queries and run natively.  As such it is highly recommended that for the 1.0 release of this module you write any application queries or traversals with high performance requirements in Sparql rather than Gremlin.  Future releases will include a native Blazegraph TraversalStrategy that will execute Gremlin traversals directly against Blazegraph's ultra-fast query engine.  Please contact us for developer support if you would like help expressing your application's queries as Sparql in the most optimized fashion for Blazegraph.
 
-Sample usage of this API can be found in SampleCode.demonstrateSparqlAPI().  This example demonstrates how to formulate one of the gremlin queries from the Tinkerpop3 documentation as a Sparql query:
+Sample usage of this API can be found in SampleCode.demonstrateSparqlAPI().  This example demonstrates how to formulate one of the gremlin queries from the TinkerPop3 documentation as a Sparql query:
 
     /*
      * Bulk load the classic graph.
@@ -488,5 +505,3 @@ Which results in the following three binding sets:
 	[c=marko, a=marko]
 	[c=marko, a=josh]
 	[c=marko, a=peter]
-
-

@@ -1,11 +1,11 @@
 /**
-Copyright (C) SYSTAP, LLC 2006-2016.  All rights reserved.
+Copyright (C) SYSTAP, LLC DBA Blazegraph 2006-2016.  All rights reserved.
 
 Contact:
-     SYSTAP, LLC
+     SYSTAP, LLC DBA Blazegraph
      2501 Calvert ST NW #106
      Washington, DC 20008
-     licenses@systap.com
+     licenses@blazegraph.com
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -73,7 +73,7 @@ abstract class AbstractBlazeElement implements BlazeElement {
     /**
      * Return element id. Tinkerpop3 interface method.
      * 
-     * @see {@link Element#id()}
+     * @see Element#id()
      */
     @Override
     public String id() {
@@ -83,7 +83,7 @@ abstract class AbstractBlazeElement implements BlazeElement {
     /**
      * Return element label. Tinkerpop3 interface method.
      * 
-     * @see {@link Element#label()}
+     * @see Element#label()
      */
     @Override
     public String label() {
@@ -93,7 +93,7 @@ abstract class AbstractBlazeElement implements BlazeElement {
     /**
      * Return the RDF representation of the label.
      * 
-     * @see {@link BlazeElement#rdfLabel()}
+     * @see BlazeElement#rdfLabel()
      */
     @Override
     public URI rdfLabel() {

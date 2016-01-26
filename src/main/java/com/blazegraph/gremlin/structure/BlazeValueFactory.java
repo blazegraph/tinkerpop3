@@ -1,11 +1,11 @@
 /**
-Copyright (C) SYSTAP, LLC 2006-2016.  All rights reserved.
+Copyright (C) SYSTAP, LLC DBA Blazegraph 2006-2016.  All rights reserved.
 
 Contact:
-     SYSTAP, LLC
+     SYSTAP, LLC DBA Blazegraph
      2501 Calvert ST NW #106
      Washington, DC 20008
-     licenses@systap.com
+     licenses@blazegraph.com
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -101,7 +101,7 @@ public interface BlazeValueFactory {
     /**
      * URI used for element labels (typing).
      * 
-     * @see {@link Defaults#TYPE}
+     * @see Defaults#TYPE
      * 
      * @return
      *          URI used for element labels.
@@ -113,7 +113,7 @@ public interface BlazeValueFactory {
     /**
      * URI used for Cardinality.list property values.
      * 
-     * @see {@link Defaults#VALUE}
+     * @see Defaults#VALUE
      * 
      * @return
      *          URI used for Cardinality.list property values.
@@ -125,7 +125,7 @@ public interface BlazeValueFactory {
     /**
      * URI used for Cardinality.list list index datatype.
      * 
-     * @see {@link Defaults#LI_DATATYPE}
+     * @see Defaults#LI_DATATYPE
      * 
      * @return
      *          URI used for Cardinality.list list index datatype.
@@ -138,7 +138,7 @@ public interface BlazeValueFactory {
      * URI used for history.  Only reason to override this is if a different
      * history implementation is used.
      * 
-     * @see {@link RDRHistory}
+     * @see RDRHistory
      * 
      * @return
      *          URI used for history.
@@ -151,7 +151,7 @@ public interface BlazeValueFactory {
      * URI used for history.  Only reason to override this is if a different
      * history implementation is used.
      * 
-     * @see {@link RDRHistory}
+     * @see RDRHistory
      * 
      * @return
      *          URI used for history.
@@ -162,8 +162,9 @@ public interface BlazeValueFactory {
     
     /**
      * Convert an element id into an RDF URI.
-     * <p/>
-     * Default behavior is to prepend the <blaze:> namespace to the id.
+     * <p>
+     * Default behavior is to prepend the {@code <blaze:>} namespace to the id.
+     * </p>
      * 
      * @param id
      *          property graph element id
@@ -176,9 +177,9 @@ public interface BlazeValueFactory {
     
     /**
      * Convert an property key into an RDF URI.
-     * <p/>
-     * Default behavior is to prepend the <blaze:> namespace to the key.
-     * 
+     * <p>
+     * Default behavior is to prepend the {@code <blaze:>} namespace to the key.
+     * </p> 
      * @param key
      *          property graph property key
      * @return
@@ -190,13 +191,12 @@ public interface BlazeValueFactory {
     
     /**
      * Convert an element label (type) into an RDF URI.
-     * <p/>
-     * Default behavior is to prepend the <blaze:> namespace to the label.
+     * <p>
+     * Default behavior is to prepend the {@code <blaze:>} namespace to the label.
+     * </p> 
+     * @param label  property graph element label
+     * @return URI RDF URI representation
      * 
-     * @param key
-     *          property graph element label
-     * @return
-     *          RDF URI representation
      */
     default URI typeURI(final String label) {
         return new URIImpl(String.format(Defaults.TYPE_URI_TEMPLATE, label));
