@@ -28,7 +28,7 @@ Copyright 2010 by TalkingTrends (Amsterdam, The Netherlands)
   <groupId>com.blazegraph</groupId>
   <artifactId>blazegraph-gremlin</artifactId>
   <packaging>jar</packaging>
-  <version>1.0.0</version>
+  <version>1.0.1-SNAPSHOT</version>
   <name>blazegraph-gremlin</name>
   <description>Welcome to the Blazegraph/TinkerPop3 project. The TP3 implementation has some significant differences from the TP2 version. The data model has been changed to use RDF*, an RDF reification framework described here: https://wiki.blazegraph.com/wiki/index.php/Reification_Done_Right.
 
